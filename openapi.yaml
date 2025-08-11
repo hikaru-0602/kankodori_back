@@ -1,0 +1,125 @@
+openapi: 3.0.3
+info:
+  title: 観光地検索システム API
+  description: テキストと画像を組み合わせた観光地検索システム
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000
+    description: 開発環境
+
+paths:
+  /search:
+    post:
+      summary: 観光地検索
+      description: |
+        テキストと画像を組み合わせて観光地を検索します。
+        - text, imageのどちらか一方は必須
+        - 不足している方は自動生成されます
+        - rangeで類似度の重み付けを設定できます
+        - 全ての観光地の類似度スコアを計算して返却します
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  description: 検索テキスト
+                  example: "美しい海岸線"
+                image:
+                  type: string
+                  format: binary
+                  description: 検索画像
+                range:
+                  type: number
+                  format: int32
+                  minimum: 0
+                  maximum: 100
+                  default: 50
+                  description: テキスト類似度の重み (100=画像のみ, 0=テキストのみ, 50=同等)
+              anyOf:
+                - required: ["text"]
+                - required: ["image"]
+      responses:
+        "200":
+          description: 検索結果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: 観光地ID
+                        similarity_score:
+                          type: number
+                          format: float
+                          description: 類似度スコア
+                          minimum: 0
+                          maximum: 1
+                      required:
+                        - id
+                        - similarity_score
+                  generated_text:
+                    type: string
+                    description: 画像から生成されたテキスト（該当時のみ）
+                  generated_image_id:
+                    type: string
+                    description: テキストから生成された画像ID（該当時のみ）
+        "400":
+          description: パラメータエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /suggest-images:
+    get:
+      summary: 画像提案
+      description: システム保有画像からランダムに6枚を提案
+      responses:
+        "200":
+          description: 提案画像リスト
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  suggested_images:
+                    type: array
+                    items:
+                      type: string
+                      description: 画像ID
+                    minItems: 6
+                    maxItems: 6
+                    example:
+                      [
+                        "img_001",
+                        "img_002",
+                        "img_003",
+                        "img_004",
+                        "img_005",
+                        "img_006",
+                      ]
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: エラーメッセージ
+        details:
+          type: string
+          description: エラー詳細
+      required:
+        - error
