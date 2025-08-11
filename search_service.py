@@ -1,6 +1,7 @@
 from typing import Optional, List, Dict, Any
 from fastapi import UploadFile
 from image_to_text_service import text_generate
+from text_to_image_service import image_generate
 
 
 async def search_tourist_spots(
@@ -8,25 +9,18 @@ async def search_tourist_spots(
     image: Optional[UploadFile] = None,
     range: int = 50
 ) -> Dict[str, Any]:
-    if range == 100:
-        return {"results": ["image"]}
-    else:
-        # range=100以外の場合、テキストが必須
-        if not text:
-            # テキストがない場合、画像からテキストを生成
-            if image:
-                generated_text = await text_generate(image)
-                if generated_text:
-                    text = generated_text
-                else:
-                    return {"error": "画像からテキストの生成に失敗しました"}
-            else:
-                return {"error": "range=100以外の場合、テキストが必要です"}
+    if range < 100 and not text:
+        text = await text_generate(image)
 
-        if range == 0:
-            return {"results": ["text"], "text_used": text}
-        else:
-            return {"results": ["text", "image"], "text_used": text}
+    if range > 0 and not image:
+        image = await image_generate(text)
+
+    if range == 0:
+        return {"results": "テキストのみ"}
+    elif range>0 and range<100:
+        return {"results": "複合"}
+    else:
+        return {"results": "画像のみ"}
 
 
 async def get_suggested_images() -> Dict[str, List[str]]:
