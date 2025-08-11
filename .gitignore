@@ -245,6 +245,7 @@ ENV/
 env.bak/
 venv.bak/
 test/
+api/
 
 # Spyder project settings
 .spyderproject
