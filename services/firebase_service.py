@@ -1,4 +1,3 @@
-import numpy as np
 from typing import Optional, List, Any, Dict
 from repositories.firebase_repository import FirebaseDataManager
 
@@ -71,9 +70,15 @@ async def get_feature(filename: str) -> Optional[tuple[Dict[str, Any], List[str]
         if raw_data is None:
             return None
 
+        # numpy配列の場合、.item()で中身を取り出す
+        import numpy as np
+        if isinstance(raw_data, np.ndarray) and raw_data.shape == ():
+            raw_data = raw_data.item()
+
         # 辞書形式でない場合はエラー
         if not isinstance(raw_data, dict):
             print(f"エラー: ロードされたデータは辞書形式ではありません: {filename}")
+            print(f"実際のデータ型: {type(raw_data)}")
             return None
 
         # 特徴量データとラベルを抽出
