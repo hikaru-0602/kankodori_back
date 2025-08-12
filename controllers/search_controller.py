@@ -1,6 +1,6 @@
 from typing import Optional, Dict, Any
 from fastapi import UploadFile, HTTPException
-from search_service import search_tourist_spots as search_service, get_suggested_images
+from services.search_service import search_tourist_spots as search_service, get_suggested_images
 
 
 class SearchController:

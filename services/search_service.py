@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict, Any
 from fastapi import UploadFile
-from image_to_text_service import text_generate
-from text_to_image_service import image_generate
+from services.text_generate_service import text_generate
+from services.image_generate_service import image_generate
 
 
 async def search_tourist_spots(
