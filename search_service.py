@@ -17,7 +17,7 @@ async def search_tourist_spots(
 
     if range == 0:
         return {"results": "テキストのみ"}
-    elif range>0 and range<100:
+    elif range > 0 and range < 100:
         return {"results": "複合"}
     else:
         return {"results": "画像のみ"}
