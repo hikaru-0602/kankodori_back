@@ -246,6 +246,7 @@ env.bak/
 venv.bak/
 test/
 api/
+firebase-key.json
 
 # Spyder project settings
 .spyderproject

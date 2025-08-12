@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict, Any
 from fastapi import UploadFile
-from image_to_text_service import text_generate
-from text_to_image_service import image_generate
+from services.text_generate_service import text_generate
+from services.image_generate_service import image_generate
 
 
 async def search_tourist_spots(
@@ -17,7 +17,7 @@ async def search_tourist_spots(
 
     if range == 0:
         return {"results": "テキストのみ"}
-    elif range>0 and range<100:
+    elif range > 0 and range < 100:
         return {"results": "複合"}
     else:
         return {"results": "画像のみ"}
