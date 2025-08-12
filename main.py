@@ -1,7 +1,7 @@
 from fastapi import FastAPI, File, Form, UploadFile
 from typing import Optional, Dict, Any
 import uvicorn
-from controllers.search_controller import SearchController
+import controllers.search_controller as search_controller
 
 app = FastAPI(
     title="観光地検索 API",
@@ -24,7 +24,7 @@ async def search_tourist_spots(
     - search_range指定で検索範囲を調整します
     - 条件に応じて指定されていない検索条件を生成します
     """
-    return await SearchController.search_tourist_spots(text, image, search_range)
+    return await search_controller.search_tourist_spots(text, image, search_range)
 
 @app.get("/suggest-images")
 async def suggest_images() -> Dict[str, Any]:
@@ -33,7 +33,7 @@ async def suggest_images() -> Dict[str, Any]:
 
     ユーザーが選択可能な画像候補を提案
     """
-    return await SearchController.suggest_images()
+    return await search_controller.suggest_images()
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

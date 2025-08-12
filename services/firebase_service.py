@@ -51,22 +51,37 @@ async def add_query_image(new_item: Dict[str, Any]) -> bool:
         return False
 
 
-async def get_feature_vector(filename: str) -> Optional[np.ndarray]:
+async def get_feature(filename: str) -> Optional[tuple[Dict[str, Any], List[str]]]:
     """
-    特徴量ベクトルを取得
+    特徴量データとラベルを取得
 
     Args:
         filename: 特徴量ファイル名
 
     Returns:
-        特徴量データ、取得失敗時はNone
+        (特徴量データ, ラベルリスト) のタプル、取得失敗時はNone
     """
     try:
         # ビジネス検証（例：ファイル名形式チェック）
         if not filename.endswith('.npy'):
             filename += '.npy'
 
-        return await _firebase_manager.get_feature_npy(filename)
+        # npyファイルを取得
+        raw_data = await _firebase_manager.get_feature_npy(filename)
+        if raw_data is None:
+            return None
+
+        # 辞書形式でない場合はエラー
+        if not isinstance(raw_data, dict):
+            print(f"エラー: ロードされたデータは辞書形式ではありません: {filename}")
+            return None
+
+        # 特徴量データとラベルを抽出
+        features = raw_data
+        labels = list(raw_data.keys())
+
+        return features, labels
+
     except Exception as e:
         print(f"特徴量取得エラー: {e}")
         return None
