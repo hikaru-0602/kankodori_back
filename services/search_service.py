@@ -23,7 +23,7 @@ async def search_tourist_spots(
         return {"results": text_similar}
     elif range > 0 and range < 100:
         text_similar, filtered_data = await text_caluculate(text)
-        image_similar, _ = await image_caluculate(image, filtered_data)
+        image_similar = await image_caluculate(image, filtered_data)
 
         # テキストと画像の類似度を統合
         integrated_results = integrate_similarities(text_similar, image_similar, range)
