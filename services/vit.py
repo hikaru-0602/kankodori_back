@@ -25,8 +25,6 @@ def get_image_vector(image_data: bytes) -> Optional[np.ndarray]:
 
         # 2. 特徴量抽出
         vector = extract_features(inputs)
-        if vector is not None:
-            print(f"画像ベクトル化完了: {vector.shape}")
 
         return vector
 

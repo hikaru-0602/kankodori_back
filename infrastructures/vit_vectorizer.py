@@ -17,7 +17,6 @@ class ViTVectorizer:
     def _initialize_model(self):
         """ViTモデルとプロセッサを初期化"""
         if not self._is_initialized:
-            print("ViTモデルを初期化中...")
             try:
                 model_name = 'google/vit-base-patch16-224'
                 self.processor = ViTImageProcessor.from_pretrained(model_name)
@@ -27,7 +26,6 @@ class ViTVectorizer:
                 self.model.eval()
 
                 self._is_initialized = True
-                print("ViTモデルの初期化が完了しました")
 
             except Exception as e:
                 print(f"ViTモデル初期化エラー: {e}")
