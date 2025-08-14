@@ -9,6 +9,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
+@app.get("/")
+async def root():
+    return {"message": "こんにちは！APIへようこそ。"}
+
+
 @app.post("/search")
 async def search_tourist_spots(
     text: Optional[str] = Form(None),
