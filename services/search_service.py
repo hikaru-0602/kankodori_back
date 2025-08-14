@@ -2,7 +2,7 @@ from typing import Optional, List, Dict, Any
 from fastapi import UploadFile
 from services.text_generate_service import text_generate
 from services.image_generate_service import image_generate
-from services.mecab import extract_keywords_only
+from services.text_service import text_calucute
 
 
 async def search_tourist_spots(
@@ -17,8 +17,8 @@ async def search_tourist_spots(
         image = await image_generate(text)
 
     if range == 0:
-        me=extract_keywords_only(text)
-        return {"results": me}
+        me = await text_calucute(text)
+        return {"results": text}
     elif range > 0 and range < 100:
         return {"results": "複合"}
     else:
