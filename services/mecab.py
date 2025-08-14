@@ -1,16 +1,18 @@
 import MeCab
-from typing import List
+from typing import List, Dict, Any
+from services.location_filter_service import filter_by_location
+from services.firebase_service import get_photo_data
 
 
-def extract_keywords_only(text: str) -> List[str]:
+async def extract_keywords_only(text: str) -> List[Dict[str, Any]]:
     """
-    形態素解析でキーワードを抽出し、重複削除する
+    形態素解析でキーワードを抽出し、地名でフィルタリングした結果を返す
 
     Args:
         text: 解析対象のテキスト
 
     Returns:
-        抽出されたキーワードのリスト（重複削除済み）
+        地名でフィルタリングされたデータリスト
     """
     # 抽出対象の品詞
     target_pos = ["名詞", "形容詞", "動詞", "形容動詞", "形状詞"]
@@ -39,5 +41,17 @@ def extract_keywords_only(text: str) -> List[str]:
 
         node = node.next
 
-    # 重複削除して返却
-    return list(set(keywords))
+    # 重複削除
+    keywords = list(set(keywords))
+    print(f"抽出されたキーワード: {keywords}")
+
+    # データ取得
+    photo_data = await get_photo_data()
+    if not photo_data:
+        print("photo_dataが取得できませんでした")
+        return []
+
+    # 地名フィルタリング
+    filtered_data = filter_by_location(keywords, photo_data)
+
+    return filtered_data

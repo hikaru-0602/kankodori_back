@@ -1,31 +1,17 @@
 from services.mecab import extract_keywords_only
-from services.firebase_service import get_photo_data
+from infrastructures.bert_vectorizer import vectorize_text
 
-async def text_calucute(text: str):
-    # 1. キーワード抽出
-    keywords = extract_keywords_only(text)
+async def text_caluculate(text: str):
+    # 1. 形態素解析 + 地名フィルタリング（mecab.pyで実行）
+    filtered_data = await extract_keywords_only(text)
 
-    # 2. データ取得
-    photo_data = await get_photo_data()
-    if not photo_data:
-        return []
+    # 2. テキストベクトル化
+    text_vector = vectorize_text(text)
+    if text_vector is None:
+        print("テキストのベクトル化に失敗しました")
+        return filtered_data  # ベクトル化失敗でも地名フィルタリング結果は返す
 
-    # 3. 地名フィルタリング
-    filtered_data = []
-    matched_locations = set()
-
-    for data in photo_data:
-        location = data.get('location', '')
-
-        # 2文字以上のキーワードで地名マッチング
-        for keyword in keywords:
-            if len(keyword) >= 2 and keyword in location:
-                matched_locations.add(location)
-                break
-
-    # 4. マッチした地名のデータをすべて収集
-    for data in photo_data:
-        if data.get('location') in matched_locations:
-            filtered_data.append(data)
+    # TODO: 後でベクトル類似度計算を追加
+    print(f"入力テキストのベクトル形状: {text_vector.shape}")
 
     return filtered_data

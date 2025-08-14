@@ -3,7 +3,7 @@ from PIL import Image
 import io
 from typing import Optional
 from fastapi import UploadFile
-from .bert_client import initialize_blip_model, get_blip_model
+from .blip_client import initialize_blip_model, get_blip_model
 
 
 class ImageProcessor:
@@ -13,10 +13,10 @@ class ImageProcessor:
     async def process_uploaded_image(image: UploadFile) -> Optional[Image.Image]:
         """
         アップロードされた画像をPIL Imageに変換
-        
+
         Args:
             image: アップロードされた画像ファイル
-            
+
         Returns:
             PIL Image オブジェクト
         """
@@ -34,10 +34,10 @@ class ImageProcessor:
     def generate_text_from_image(pil_image: Image.Image) -> Optional[str]:
         """
         PIL ImageからBLIPモデルを使用してテキストを生成
-        
+
         Args:
             pil_image: PIL Image オブジェクト
-            
+
         Returns:
             生成されたテキスト（英語）
         """
