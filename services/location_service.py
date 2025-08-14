@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Set
 
 
-def filter_by_location(keywords: List[str], data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def filter_location(keywords: List[str], data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     キーワードによる地名フィルタリング
 
@@ -35,5 +35,10 @@ def filter_by_location(keywords: List[str], data: List[Dict[str, Any]]) -> List[
 
     print(f"マッチした地名: {list(matched_locations)}")
     print(f"フィルタリング結果: {len(filtered_data)}件")
+
+    # 3. 一致する地名がない場合は元のデータをそのまま返す
+    if not filtered_data:
+        print("地名一致なし。元のデータをそのまま返します")
+        return data
 
     return filtered_data

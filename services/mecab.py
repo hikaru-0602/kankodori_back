@@ -1,10 +1,10 @@
 import MeCab
 from typing import List, Dict, Any
-from services.location_filter_service import filter_by_location
+from services.location_service import filter_location
 from services.firebase_service import get_photo_data
 
 
-async def extract_keywords_only(text: str) -> List[Dict[str, Any]]:
+async def keyword(text: str) -> List[Dict[str, Any]]:
     """
     形態素解析でキーワードを抽出し、地名でフィルタリングした結果を返す
 
@@ -52,6 +52,6 @@ async def extract_keywords_only(text: str) -> List[Dict[str, Any]]:
         return []
 
     # 地名フィルタリング
-    filtered_data = filter_by_location(keywords, photo_data)
+    filtered_data = filter_location(keywords, photo_data)
 
     return filtered_data
