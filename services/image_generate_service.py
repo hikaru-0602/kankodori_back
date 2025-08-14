@@ -51,9 +51,7 @@ async def image_generate(prompt: str) -> Optional[Image.Image]:
                 return existing_image
 
         # 3. プロンプト処理
-        print(f"元のプロンプト: {prompt}")
         english_prompt = create_enhanced_prompt(prompt)
-        print(f"拡張・翻訳プロンプト: {english_prompt}")
 
         # 4. 画像生成
         hf_client = get_huggingface_client()
