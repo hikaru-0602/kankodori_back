@@ -43,10 +43,6 @@ def similarity_sort(
                 continue
 
             try:
-                # feature_vectorの形状確認とreshape
-                print(f"feature_vector shape: {feature_vector.shape}")
-                print(f"query_vector shape: {query_vector.shape}")
-
                 # feature_vectorが1次元の場合は2次元にreshape
                 if feature_vector.ndim == 1:
                     feature_vector_2d = feature_vector.reshape(1, -1)
@@ -61,7 +57,9 @@ def similarity_sort(
                 # コサイン類似度計算
                 similarity = cosine_similarity(query_vector_2d, feature_vector_2d)[0][0]
                 normalized_similarity = (similarity + 1) / 2
-                similarities.append({"id": label_id, "similarity": float(normalized_similarity)})
+                name = item.get("name")
+                locarion = item.get("location")
+                similarities.append({"id": label_id, "name": name, "location": locarion, "similarity": float(normalized_similarity)})
 
             except Exception as e:
                 print(f"類似度計算エラー (ID: {label_id}): {e}")
