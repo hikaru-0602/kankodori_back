@@ -1,7 +1,7 @@
 from services.mecab import keyword
 from services.bert import text_vector
 from services.firebase_service import get_feature
-from services.similarity_service import calculate_similarity_ranking
+from services.similarity_service import similarity_sort
 
 async def text_caluculate(text: str):
     # 1. 形態素解析 + 地名フィルタリング（mecab.pyで実行）
@@ -14,6 +14,6 @@ async def text_caluculate(text: str):
     features, labels = await get_feature("bert_ja_mean.npy")
 
     # 4. コサイン類似度計算とソート
-    similarity_results = calculate_similarity_ranking(filtered_data, vector, features, labels)
+    similarity_results = similarity_sort(filtered_data, vector, features, labels)
 
-    return similarity_results
+    return similarity_results, filtered_data

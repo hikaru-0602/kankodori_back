@@ -1,9 +1,9 @@
 import numpy as np
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any
 from sklearn.metrics.pairwise import cosine_similarity
 
 
-def calculate_similarity_ranking(
+def similarity_sort(
     filtered_data: List[Dict[str, Any]],
     query_vector: np.ndarray,
     features: np.ndarray,
