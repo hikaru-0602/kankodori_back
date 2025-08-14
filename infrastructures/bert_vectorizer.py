@@ -15,7 +15,6 @@ class BertVectorizer:
     def _initialize_model(self):
         """BERTモデルとトークナイザーを初期化"""
         if not self._is_initialized:
-            print("日本語BERTモデルを初期化中...")
             try:
                 model_name = 'cl-tohoku/bert-base-japanese-whole-word-masking'
                 self.tokenizer = BertTokenizer.from_pretrained(model_name)
@@ -25,7 +24,6 @@ class BertVectorizer:
                 self.model.eval()
 
                 self._is_initialized = True
-                print("日本語BERTモデルの初期化が完了しました")
 
             except Exception as e:
                 print(f"BERTモデル初期化エラー: {e}")
