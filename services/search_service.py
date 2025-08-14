@@ -17,9 +17,11 @@ async def search_tourist_spots(
         image = await image_generate(text)
 
     if range == 0:
-        me = await text_caluculate(text)
-        return {"results": me}
+        text_similar = await text_caluculate(text)
+        return {"results": text_similar}
     elif range > 0 and range < 100:
+        text_similar, filtered_data = await text_caluculate(text)
+
         return {"results": "複合"}
     else:
         return {"results": "画像のみ"}
