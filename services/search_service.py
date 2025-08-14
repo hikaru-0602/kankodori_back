@@ -3,6 +3,7 @@ from fastapi import UploadFile
 from services.text_generate_service import text_generate
 from services.image_generate_service import image_generate
 from services.text_service import text_caluculate
+from services.image_service import image_caluculate
 
 
 async def search_tourist_spots(
@@ -21,10 +22,12 @@ async def search_tourist_spots(
         return {"results": text_similar}
     elif range > 0 and range < 100:
         text_similar, filtered_data = await text_caluculate(text)
+        image_similar = await image_caluculate(image, filtered_data)
 
-        return {"results": "複合"}
+        return {"results": image_similar}
     else:
-        return {"results": "画像のみ"}
+        image_similar = await image_caluculate(image)
+        return {"results": image_similar}
 
 
 async def get_suggested_images() -> Dict[str, List[str]]:
