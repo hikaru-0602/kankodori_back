@@ -18,7 +18,7 @@ async def search_tourist_spots(
 
     if range == 0:
         me = await text_caluculate(text)
-        return {"results": text}
+        return {"results": me}
     elif range > 0 and range < 100:
         return {"results": "複合"}
     else:
