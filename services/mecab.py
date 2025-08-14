@@ -43,7 +43,6 @@ async def keyword(text: str) -> List[Dict[str, Any]]:
 
     # 重複削除
     keywords = list(set(keywords))
-    print(f"抽出されたキーワード: {keywords}")
 
     # データ取得
     photo_data = await get_photo_data()

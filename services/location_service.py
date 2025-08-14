@@ -33,9 +33,6 @@ def filter_location(keywords: List[str], data: List[Dict[str, Any]]) -> List[Dic
         if item.get('location') in matched_locations:
             filtered_data.append(item)
 
-    print(f"マッチした地名: {list(matched_locations)}")
-    print(f"フィルタリング結果: {len(filtered_data)}件")
-
     # 3. 一致する地名がない場合は元のデータをそのまま返す
     if not filtered_data:
         print("地名一致なし。元のデータをそのまま返します")
