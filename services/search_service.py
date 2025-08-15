@@ -5,6 +5,7 @@ from services.image_generate_service import image_generate
 from services.text_service import text_caluculate
 from services.image_service import image_caluculate
 from services.integration_service import integrate_similarities
+from services.suggestion_service import random_suggest
 
 
 async def search_tourist_spots(
@@ -41,14 +42,6 @@ async def get_suggested_images() -> Dict[str, List[str]]:
     Returns:
         提案画像リスト
     """
-    # TODO: 実際の画像データベース連携
-    suggested_images = [
-        "img_001",
-        "img_002",
-        "img_003",
-        "img_004",
-        "img_005",
-        "img_006"
-    ]
+    image_suggest = await random_suggest()
 
-    return {"suggested_images": suggested_images}
+    return {"suggested_images": image_suggest}
