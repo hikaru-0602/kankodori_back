@@ -34,12 +34,12 @@ paths:
                   format: binary
                   description: 検索画像
                 range:
-                  type: number
-                  format: int32
+                  type: integer
                   minimum: 0
                   maximum: 100
                   default: 50
-                  description: テキスト類似度の重み (100=画像のみ, 0=テキストのみ, 50=同等)
+                  description: テキスト類似度の重み (0=テキストのみ, 100=画像のみ, 50=同等)
+                  example: 50
               anyOf:
                 - required: ["text"]
                 - required: ["image"]
@@ -59,21 +59,27 @@ paths:
                         id:
                           type: string
                           description: 観光地ID
-                        similarity_score:
+                          example: "place_001"
+                        name:
+                          type: string
+                          description: 観光地名
+                          example: "美ら海水族館"
+                        location:
+                          type: string
+                          description: 観光地の場所
+                          example: "沖縄県本部町"
+                        similarity:
                           type: number
                           format: float
-                          description: 類似度スコア
+                          description: 類似度スコア (0-1の範囲)
                           minimum: 0
                           maximum: 1
+                          example: 0.85
                       required:
                         - id
-                        - similarity_score
-                  generated_text:
-                    type: string
-                    description: 画像から生成されたテキスト（該当時のみ）
-                  generated_image_id:
-                    type: string
-                    description: テキストから生成された画像ID（該当時のみ）
+                        - similarity
+                required:
+                  - results
         "400":
           description: パラメータエラー
           content:
@@ -98,7 +104,7 @@ paths:
                     items:
                       type: string
                       description: 画像ID
-                    minItems: 6
+                    minItems: 1
                     maxItems: 6
                     example:
                       [
@@ -107,8 +113,10 @@ paths:
                         "img_003",
                         "img_004",
                         "img_005",
-                        "img_006",
+                        "img_006"
                       ]
+                required:
+                  - suggested_images
 
 components:
   schemas:
