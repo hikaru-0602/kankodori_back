@@ -1,4 +1,5 @@
 from fastapi import FastAPI, File, Form, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, Dict, Any
 import uvicorn
 import controllers.search_controller as search_controller
@@ -7,6 +8,14 @@ app = FastAPI(
     title="観光地検索 API",
     description="テキストや画像から観光地検索",
     version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 全てのオリジンを許可
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.get("/")
