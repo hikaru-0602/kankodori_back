@@ -19,4 +19,4 @@ async def random_suggest() -> Dict[str, List[str]]:
     # ランダムで6つ選択
     random_images = random.sample(all_images, 6)
 
-    return {"suggested_images": random_images}
+    return random_images
