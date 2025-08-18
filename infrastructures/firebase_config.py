@@ -1,3 +1,4 @@
+import json
 import firebase_admin
 from firebase_admin import credentials, storage
 import os
@@ -11,10 +12,17 @@ load_dotenv()
 def initialize_firebase():
     """Firebase Admin SDKを初期化"""
     if not firebase_admin._apps:
-        cred_path = os.environ.get("FIREBASE_SERVICE_ACCOUNT_KEY_PATH", "firebase-key.json")
+        cred_value = os.environ.get("FIREBASE_SERVICE_ACCOUNT_KEY") # 新しい環境変数名に変更することを推奨
         bucket_name = os.environ.get("FIREBASE_STORAGE_BUCKET", "kankodori-23918.firebasestorage.app")
 
-        cred = credentials.Certificate(cred_path)
+        if cred_value:
+            # 環境変数にキーのJSON文字列がある場合
+            cred_dict = json.loads(cred_value)
+            cred = credentials.Certificate(cred_dict)
+        else:
+            # ローカル環境などでファイルパスが指定されている場合
+            cred = credentials.Certificate("firebase-key.json")
+
         firebase_admin.initialize_app(cred, {
             'storageBucket': bucket_name
         })
