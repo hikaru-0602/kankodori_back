@@ -14,7 +14,7 @@ async def random_suggest() -> Dict[str, List[str]]:
 
     # 6つ以下の場合はそのまま返す
     if len(all_images) <= 6:
-        return {"suggested_images": all_images}
+        return all_images
 
     # ランダムで6つ選択
     random_images = random.sample(all_images, 6)
