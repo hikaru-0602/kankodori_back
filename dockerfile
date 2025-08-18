@@ -21,12 +21,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # アプリケーションのソースコードをコピー
 COPY . .
 
-# ポート8000を公開
-EXPOSE 3110
+# アプリケーションがリッスンするポートを$PORT環境変数から取得
+ENV PORT 8080
+EXPOSE $PORT
 
 # ヘルスチェック
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3110/ || exit 1
+    CMD curl -f http://localhost:$PORT || exit 1
 
 # アプリケーションを起動
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3110"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "$PORT"]
