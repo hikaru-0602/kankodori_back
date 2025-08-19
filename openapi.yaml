@@ -33,7 +33,7 @@ paths:
                   type: string
                   format: binary
                   description: 検索画像
-                range:
+                search_range:
                   type: integer
                   minimum: 0
                   maximum: 100
@@ -85,7 +85,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: "#/components/schemas/HTTPException"
 
   /suggest-images:
     get:
@@ -97,37 +97,30 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  suggested_images:
-                    type: array
-                    items:
-                      type: string
-                      description: 画像ID
-                    minItems: 1
-                    maxItems: 6
-                    example:
-                      [
-                        "img_001",
-                        "img_002",
-                        "img_003",
-                        "img_004",
-                        "img_005",
-                        "img_006"
-                      ]
-                required:
-                  - suggested_images
+                type: array
+                items:
+                  type: string
+                  description: 画像ファイル名
+                minItems: 1
+                maxItems: 6
+                example:
+                  [
+                    "images (1).jpg",
+                    "IMG_20241221_200910.jpg",
+                    "IMG_7712.jpeg",
+                    "函館のきれいな海.jpg",
+                    "函館のとてもきれいな景色.jpg",
+                    "55FF9164-B5D7-4000-94F0-D78047B68EB2.jpeg"
+                  ]
 
 components:
   schemas:
-    Error:
+    HTTPException:
       type: object
       properties:
-        error:
+        detail:
           type: string
           description: エラーメッセージ
-        details:
-          type: string
-          description: エラー詳細
+          example: "text または image のいずれかは必須です"
       required:
-        - error
+        - detail
