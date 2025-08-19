@@ -1,8 +1,30 @@
-from fastapi import FastAPI, File, Form, UploadFile
+import logging
+from fastapi import FastAPI, File, Form, UploadFile, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from firebase_admin import auth
 from typing import Optional, Dict, Any
 import uvicorn
 import controllers.search_controller as search_controller
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Firebase認証用
+security = HTTPBearer()
+
+async def verify_firebase_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        # Firebase ID tokenを検証
+        decoded_token = auth.verify_id_token(credentials.credentials)
+        return decoded_token
+    except Exception as e:
+        logger.error(f"Token verification failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 app = FastAPI(
     title="観光地検索 API",
@@ -27,7 +49,8 @@ async def root():
 async def search_tourist_spots(
     text: Optional[str] = Form(None),
     image: Optional[UploadFile] = File(None),
-    search_range: int = Form(50, ge=0, le=100)
+    search_range: int = Form(50, ge=0, le=100),
+    user: dict = Depends(verify_firebase_token)
 ) -> Dict[str, Any]:
     """
     観光地検索
@@ -44,6 +67,16 @@ async def search_tourist_spots(
 async def suggest_images() -> Dict[str, Any]:
     """
     画像提案
+
+    ユーザーが選択可能な画像候補を提案
+    """
+    return await search_controller.suggest_images()
+
+# 認証なしのパブリックエンドポイント
+@app.get("/public/suggest-images")
+async def suggest_images_public() -> Dict[str, Any]:
+    """
+    画像提案（認証なし）
 
     ユーザーが選択可能な画像候補を提案
     """
