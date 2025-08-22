@@ -18,12 +18,23 @@ class ViTVectorizer:
         """ViTモデルとプロセッサを初期化"""
         if not self._is_initialized:
             try:
-                model_name = 'google/vit-base-patch16-224'
-                self.processor = ViTImageProcessor.from_pretrained(model_name, use_fast=True)
-                self.model = ViTModel.from_pretrained(model_name)
-
-                # 評価モードに設定
-                self.model.eval()
+                # 事前初期化済みモデルがあれば使用
+                import os
+                if os.path.exists('/app/models/vit_initialized.pth'):
+                    print("事前初期化済みViTモデルを読み込み中...")
+                    import torch
+                    saved_data = torch.load('/app/models/vit_initialized.pth', map_location='cpu', weights_only=False)
+                    self.processor = saved_data['processor']
+                    self.model = saved_data['model']
+                    print("事前初期化済みViTモデルの読み込み完了")
+                else:
+                    # 従来通りダウンロード
+                    print("ViTモデルをダウンロード中...")
+                    model_name = 'google/vit-base-patch16-224'
+                    self.processor = ViTImageProcessor.from_pretrained(model_name, use_fast=True)
+                    self.model = ViTModel.from_pretrained(model_name)
+                    # 評価モードに設定
+                    self.model.eval()
 
                 self._is_initialized = True
 

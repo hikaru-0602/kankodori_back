@@ -5,8 +5,7 @@ from services.search_service import search_tourist_spots as search_service, get_
 
 async def search_tourist_spots(
     text: Optional[str] = None,
-    image: Optional[UploadFile] = None,
-    search_range: int = 50
+    image: Optional[UploadFile] = None
 ) -> Dict[str, Any]:
     """
     観光地検索の処理
@@ -37,7 +36,7 @@ async def search_tourist_spots(
             detail="text または image のいずれかは必須です"
         )
 
-    return await search_service(text, image, search_range)
+    return await search_service(text, image)
 
 
 async def suggest_images() -> Dict[str, Any]:

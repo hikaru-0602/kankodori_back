@@ -1,5 +1,6 @@
 # 設定
-API_URL = https://kankodori-625939020208.asia-northeast1.run.app
+#API_URL = https://kankodori-625939020208.asia-northeast1.run.app
+API_URL = http://localhost:3110
 
 # バックエンドサーバーを開発モードで起動
 back:
@@ -30,7 +31,6 @@ suggest:
 search:
 	curl -X POST "$(API_URL)/search" \
 		-H "Content-Type: multipart/form-data" \
-		-F "text=函館の絶景" \
-		-F "search_range=30"
+		-F "text=函館の絶景"
 
 .PHONY: search

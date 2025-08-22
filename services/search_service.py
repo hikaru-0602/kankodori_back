@@ -10,34 +10,20 @@ from services.suggestion_service import random_suggest
 
 async def search_tourist_spots(
     text: Optional[str] = None,
-    image: Optional[UploadFile] = None,
-    search_range: int = 50
+    image: Optional[UploadFile] = None
 ) -> Dict[str, Any]:
-    if search_range < 100 and text==None:
+    if text==None:
         text = await text_generate(image)
 
-    if search_range > 0 and image==None:
+    if image==None:
         image = await image_generate(text)
 
-    if search_range == 0:
-        text_similar = await text_caluculate(text)
-        print("text only")
-        print(search_range)
-        return {"results": text_similar}
-    elif search_range > 0 and search_range < 100:
-        text_similar, filtered_data = await text_caluculate(text)
-        image_similar = await image_caluculate(image, filtered_data)
+    text_similar, filtered_data = await text_caluculate(text)
+    image_similar = await image_caluculate(image, filtered_data)
 
-        # テキストと画像の類似度を統合
-        integrated_results = integrate_similarities(text_similar, image_similar, search_range)
-        print("text and image")
-        print(search_range)
-        return {"results": integrated_results}
-    else:
-        image_similar = await image_caluculate(image)
-        print("image only")
-        print(search_range)
-        return {"results": image_similar}
+    # テキストと画像の類似度を統合
+    integrated_results = integrate_similarities(text_similar, image_similar)
+    return {"results": integrated_results}
 
 
 async def get_suggested_images() -> Dict[str, List[str]]:

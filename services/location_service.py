@@ -35,7 +35,6 @@ def filter_location(keywords: List[str], data: List[Dict[str, Any]]) -> List[Dic
 
     # 3. 一致する地名がない場合は元のデータをそのまま返す
     if not filtered_data:
-        print("地名一致なし。元のデータをそのまま返します")
         return data
 
     return filtered_data

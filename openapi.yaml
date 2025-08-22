@@ -16,8 +16,8 @@ paths:
         テキストと画像を組み合わせて観光地を検索します。
         - text, imageのどちらか一方は必須
         - 不足している方は自動生成されます
-        - rangeで類似度の重み付けを設定できます
-        - 全ての観光地の類似度スコアを計算して返却します
+        - テキスト・画像両方の類似度を計算して返却します
+        - フロントエンド側で類似度の加算・ソートを実行します
       requestBody:
         required: true
         content:
@@ -33,13 +33,6 @@ paths:
                   type: string
                   format: binary
                   description: 検索画像
-                search_range:
-                  type: integer
-                  minimum: 0
-                  maximum: 100
-                  default: 50
-                  description: テキスト類似度の重み (0=テキストのみ, 100=画像のみ, 50=同等)
-                  example: 50
               anyOf:
                 - required: ["text"]
                 - required: ["image"]
@@ -68,16 +61,26 @@ paths:
                           type: string
                           description: 観光地の場所
                           example: "沖縄県本部町"
-                        similarity:
+                        text_similarity:
                           type: number
                           format: float
-                          description: 類似度スコア (0-1の範囲)
+                          description: テキスト類似度スコア (0-1の範囲)
                           minimum: 0
                           maximum: 1
                           example: 0.85
+                        image_similarity:
+                          type: number
+                          format: float
+                          description: 画像類似度スコア (0-1の範囲)
+                          minimum: 0
+                          maximum: 1
+                          example: 0.78
                       required:
                         - id
-                        - similarity
+                        - name
+                        - location
+                        - text_similarity
+                        - image_similarity
                 required:
                   - results
         "400":

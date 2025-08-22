@@ -26,8 +26,7 @@ async def root():
 @app.post("/search")
 async def search_tourist_spots(
     text: Optional[str] = Form(None),
-    image: Optional[UploadFile] = File(None),
-    search_range: int = Form(50, ge=0, le=100)
+    image: Optional[UploadFile] = File(None)
 ) -> Dict[str, Any]:
     """
     観光地検索
@@ -38,7 +37,7 @@ async def search_tourist_spots(
     - search_range指定で検索範囲を調整します
     - 条件に応じて指定されていない検索条件を生成します
     """
-    return await search_controller.search_tourist_spots(text, image, search_range)
+    return await search_controller.search_tourist_spots(text, image)
 
 @app.get("/suggest-images")
 async def suggest_images() -> Dict[str, Any]:

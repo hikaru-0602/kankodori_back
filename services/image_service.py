@@ -8,7 +8,7 @@ async def image_caluculate(image: UploadFile, filtered_data: Optional[List[Dict[
     # imageがNoneの場合は空の結果を返す
     if image is None:
         return []
-    
+
     # 1. 画像データを読み込み
     if hasattr(image, 'read'):
         # UploadFileの場合

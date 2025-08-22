@@ -16,12 +16,24 @@ class BertVectorizer:
         """BERTモデルとトークナイザーを初期化"""
         if not self._is_initialized:
             try:
-                model_name = 'cl-tohoku/bert-base-japanese-whole-word-masking'
-                self.tokenizer = BertJapaneseTokenizer.from_pretrained(model_name)
-                self.model = BertModel.from_pretrained(model_name)
+                # 事前初期化済みモデルがあれば使用
+                import os
+                if os.path.exists('/app/models/bert_initialized.pth'):
+                    print("事前初期化済みBERTモデルを読み込み中...")
+                    import torch
+                    saved_data = torch.load('/app/models/bert_initialized.pth', map_location='cpu', weights_only=False)
+                    self.tokenizer = saved_data['tokenizer']
+                    self.model = saved_data['model']
+                    print("事前初期化済みBERTモデルの読み込み完了")
+                else:
+                    # 従来通りダウンロード
+                    print("BERTモデルをダウンロード中...")
+                    model_name = 'cl-tohoku/bert-base-japanese-whole-word-masking'
+                    self.tokenizer = BertJapaneseTokenizer.from_pretrained(model_name)
+                    self.model = BertModel.from_pretrained(model_name)
 
-                # 評価モードに設定
-                self.model.eval()
+                    # 評価モードに設定
+                    self.model.eval()
 
                 self._is_initialized = True
 
