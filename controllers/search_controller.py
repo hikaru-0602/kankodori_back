@@ -22,8 +22,16 @@ async def search_tourist_spots(
     Raises:
         HTTPException: 入力パラメータが無効な場合
     """
+    # text の undefined/空文字チェック
+    if text and (text.strip() == "" or text.strip().lower() == "undefined"):
+        text = None
+
+    # image の undefined/空文字チェック
+    if image and (not hasattr(image, 'filename') or not image.filename):
+        image = None
+
     # 入力チェック
-    if not text and not image:
+    if text==None and image==None:
         raise HTTPException(
             status_code=400,
             detail="text または image のいずれかは必須です"

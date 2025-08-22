@@ -12,16 +12,16 @@ load_dotenv()
 def initialize_firebase():
     """Firebase Admin SDKを初期化"""
     if not firebase_admin._apps:
-        cred_value = os.environ.get("FIREBASE_SERVICE_ACCOUNT_KEY") # 新しい環境変数名に変更することを推奨
-        bucket_name = os.environ.get("FIREBASE_STORAGE_BUCKET", "kankodori-23918.firebasestorage.app")
-
-        if cred_value:
-            # 環境変数にキーのJSON文字列がある場合
-            cred_dict = json.loads(cred_value)
-            cred = credentials.Certificate(cred_dict)
-        else:
-            # ローカル環境などでファイルパスが指定されている場合
+        if os.path.exists("firebase-key.json"):
+            # ローカルではファイルから認証
             cred = credentials.Certificate("firebase-key.json")
+        else:
+            # Cloud RunなどではADCを利用
+            cred = credentials.ApplicationDefault()
+
+        bucket_name = os.environ.get("FIREBASE_STORAGE_BUCKET", "kankodori-23918.firebasestorage.app")
+        if not bucket_name:
+            raise ValueError("FIREBASE_STORAGE_BUCKET環境変数が設定されていません")
 
         firebase_admin.initialize_app(cred, {
             'storageBucket': bucket_name

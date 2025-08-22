@@ -11,7 +11,12 @@ def initialize_blip_model():
     if processor is None or model is None:
         print("BLIPモデルを初期化中...")
         model_name = "Salesforce/blip-image-captioning-large"
-        processor = BlipProcessor.from_pretrained(model_name)
+        
+        # 警告を抑制してプロセッサー初期化
+        import warnings
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="Using a slow image processor")
+            processor = BlipProcessor.from_pretrained(model_name, use_fast=True)
         model = BlipForConditionalGeneration.from_pretrained(model_name)
 
         print("BLIPモデルの初期化が完了しました")

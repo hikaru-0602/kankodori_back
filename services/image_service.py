@@ -5,8 +5,20 @@ from services.firebase_service import get_feature, get_photo_data
 from services.similarity_service import similarity_sort
 
 async def image_caluculate(image: UploadFile, filtered_data: Optional[List[Dict[str, Any]]] = None):
+    # imageがNoneの場合は空の結果を返す
+    if image is None:
+        return []
+    
     # 1. 画像データを読み込み
-    image_data = await image.read()
+    if hasattr(image, 'read'):
+        # UploadFileの場合
+        image_data = await image.read()
+    else:
+        # PIL.Imageの場合（image_generateから返された）
+        import io
+        buffer = io.BytesIO()
+        image.save(buffer, format='JPEG')
+        image_data = buffer.getvalue()
 
     # 2. vit.pyを使用して画像からベクトルを抽出
     vector = get_image_vector(image_data)

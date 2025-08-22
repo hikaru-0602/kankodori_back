@@ -19,7 +19,7 @@ class ViTVectorizer:
         if not self._is_initialized:
             try:
                 model_name = 'google/vit-base-patch16-224'
-                self.processor = ViTImageProcessor.from_pretrained(model_name)
+                self.processor = ViTImageProcessor.from_pretrained(model_name, use_fast=True)
                 self.model = ViTModel.from_pretrained(model_name)
 
                 # 評価モードに設定

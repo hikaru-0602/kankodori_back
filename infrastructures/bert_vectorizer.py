@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from transformers import BertTokenizer, BertModel
+from transformers import BertJapaneseTokenizer, BertModel
 from typing import Optional
 
 
@@ -17,7 +17,7 @@ class BertVectorizer:
         if not self._is_initialized:
             try:
                 model_name = 'cl-tohoku/bert-base-japanese-whole-word-masking'
-                self.tokenizer = BertTokenizer.from_pretrained(model_name)
+                self.tokenizer = BertJapaneseTokenizer.from_pretrained(model_name)
                 self.model = BertModel.from_pretrained(model_name)
 
                 # 評価モードに設定
