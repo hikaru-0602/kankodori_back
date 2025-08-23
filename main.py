@@ -2,9 +2,17 @@ from fastapi import FastAPI, File, Form, UploadFile, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, Dict, Any
 import uvicorn
+import time
 import controllers.search_controller as search_controller
 from firebase_admin import auth
 from infrastructures.firebase_config import initialize_firebase
+from services.logging_service import (
+    save_api_log,
+    create_request_data_search,
+    create_request_data_suggest,
+    create_response_data,
+    create_client_info
+)
 
 # Firebase初期化
 initialize_firebase()
@@ -65,11 +73,67 @@ async def search_tourist_spots(
     - search_range指定で検索範囲を調整します
     - 条件に応じて指定されていない検索条件を生成します
     """
+    start_time = time.time()
+
     # Firebase認証
     user_uid = await verify_firebase_token(request)
     print(f"Authenticated user: {user_uid}")
 
-    return await search_controller.search_tourist_spots(text, image)
+    # リクエストデータ作成
+    request_data = create_request_data_search(
+        text=text,
+        image_present=image is not None,
+        text_source="user_input",
+        image_source="user_upload" if image else None
+    )
+
+    # クライアント情報作成
+    client_info = create_client_info(
+        user_agent=request.headers.get('user-agent'),
+        ip=request.client.host
+    )
+
+    try:
+        # API処理実行
+        result = await search_controller.search_tourist_spots(text, image)
+
+        # 成功時のログ保存
+        processing_time = int((time.time() - start_time) * 1000)
+        response_data = create_response_data(
+            status="success",
+            result=result,
+            result_count=len(result.get('results', [])) if isinstance(result, dict) else None
+        )
+
+        await save_api_log(
+            user_id=user_uid,
+            api_endpoint="search",
+            request_data=request_data,
+            response_data=response_data,
+            processing_time_ms=processing_time,
+            client_info=client_info
+        )
+
+        return result
+
+    except Exception as e:
+        # エラー時のログ保存
+        processing_time = int((time.time() - start_time) * 1000)
+        response_data = create_response_data(
+            status="error",
+            error_message=str(e)
+        )
+
+        await save_api_log(
+            user_id=user_uid,
+            api_endpoint="search",
+            request_data=request_data,
+            response_data=response_data,
+            processing_time_ms=processing_time,
+            client_info=client_info
+        )
+
+        raise
 
 @app.get("/suggest-images")
 async def suggest_images(request: Request) -> Dict[str, Any]:
@@ -78,11 +142,62 @@ async def suggest_images(request: Request) -> Dict[str, Any]:
 
     ユーザーが選択可能な画像候補を提案
     """
+    start_time = time.time()
+
     # Firebase認証
     user_uid = await verify_firebase_token(request)
     print(f"Authenticated user: {user_uid}")
 
-    return await search_controller.suggest_images()
+    # リクエストデータ作成
+    request_data = create_request_data_suggest()
+
+    # クライアント情報作成
+    client_info = create_client_info(
+        user_agent=request.headers.get('user-agent'),
+        ip=request.client.host
+    )
+
+    try:
+        # API処理実行
+        result = await search_controller.suggest_images()
+
+        # 成功時のログ保存
+        processing_time = int((time.time() - start_time) * 1000)
+        response_data = create_response_data(
+            status="success",
+            result=result,
+            result_count=len(result.get('suggested_images', [])) if isinstance(result, dict) else None
+        )
+
+        await save_api_log(
+            user_id=user_uid,
+            api_endpoint="suggest-images",
+            request_data=request_data,
+            response_data=response_data,
+            processing_time_ms=processing_time,
+            client_info=client_info
+        )
+
+        return result
+
+    except Exception as e:
+        # エラー時のログ保存
+        processing_time = int((time.time() - start_time) * 1000)
+        response_data = create_response_data(
+            status="error",
+            error_message=str(e)
+        )
+
+        await save_api_log(
+            user_id=user_uid,
+            api_endpoint="suggest-images",
+            request_data=request_data,
+            response_data=response_data,
+            processing_time_ms=processing_time,
+            client_info=client_info
+        )
+
+        raise
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

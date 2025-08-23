@@ -1,6 +1,6 @@
 import json
 import firebase_admin
-from firebase_admin import credentials, storage
+from firebase_admin import credentials, storage, firestore
 import os
 from PIL import Image
 from typing import Optional
