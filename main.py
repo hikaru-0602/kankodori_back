@@ -10,8 +10,8 @@ from services.logging_service import (
     save_api_log,
     create_request_data_search,
     create_request_data_suggest,
-    create_response_data,
-    create_client_info
+    create_response_data_search,
+    create_response_data_suggest
 )
 
 # Firebase初期化
@@ -87,39 +87,29 @@ async def search_tourist_spots(
         image_source="user_upload" if image else None
     )
 
-    # クライアント情報作成
-    client_info = create_client_info(
-        user_agent=request.headers.get('user-agent'),
-        ip=request.client.host
-    )
-
     try:
         # API処理実行
         result = await search_controller.search_tourist_spots(text, image)
 
         # 成功時のログ保存
-        processing_time = int((time.time() - start_time) * 1000)
-        response_data = create_response_data(
+        response_data = create_response_data_search(
             status="success",
             result=result,
-            result_count=len(result.get('results', [])) if isinstance(result, dict) else None
+            total_candidates=len(result.get('results', [])) if isinstance(result, dict) else None
         )
 
         await save_api_log(
             user_id=user_uid,
             api_endpoint="search",
             request_data=request_data,
-            response_data=response_data,
-            processing_time_ms=processing_time,
-            client_info=client_info
+            response_data=response_data
         )
 
         return result
 
     except Exception as e:
         # エラー時のログ保存
-        processing_time = int((time.time() - start_time) * 1000)
-        response_data = create_response_data(
+        response_data = create_response_data_search(
             status="error",
             error_message=str(e)
         )
@@ -128,9 +118,7 @@ async def search_tourist_spots(
             user_id=user_uid,
             api_endpoint="search",
             request_data=request_data,
-            response_data=response_data,
-            processing_time_ms=processing_time,
-            client_info=client_info
+            response_data=response_data
         )
 
         raise
@@ -150,40 +138,28 @@ async def suggest_images(request: Request) -> Dict[str, Any]:
 
     # リクエストデータ作成
     request_data = create_request_data_suggest()
-
-    # クライアント情報作成
-    client_info = create_client_info(
-        user_agent=request.headers.get('user-agent'),
-        ip=request.client.host
-    )
-
     try:
         # API処理実行
         result = await search_controller.suggest_images()
 
         # 成功時のログ保存
-        processing_time = int((time.time() - start_time) * 1000)
-        response_data = create_response_data(
+        response_data = create_response_data_suggest(
             status="success",
-            result=result,
-            result_count=len(result.get('suggested_images', [])) if isinstance(result, dict) else None
+            result=result
         )
 
         await save_api_log(
             user_id=user_uid,
             api_endpoint="suggest-images",
             request_data=request_data,
-            response_data=response_data,
-            processing_time_ms=processing_time,
-            client_info=client_info
+            response_data=response_data
         )
 
         return result
 
     except Exception as e:
         # エラー時のログ保存
-        processing_time = int((time.time() - start_time) * 1000)
-        response_data = create_response_data(
+        response_data = create_response_data_suggest(
             status="error",
             error_message=str(e)
         )
@@ -192,9 +168,7 @@ async def suggest_images(request: Request) -> Dict[str, Any]:
             user_id=user_uid,
             api_endpoint="suggest-images",
             request_data=request_data,
-            response_data=response_data,
-            processing_time_ms=processing_time,
-            client_info=client_info
+            response_data=response_data
         )
 
         raise
