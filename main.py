@@ -13,6 +13,7 @@ from services.logging_service import (
     create_response_data_search,
     create_response_data_suggest
 )
+from services.image_storage_service import process_search_image, process_search_with_no_image
 
 # Firebase初期化
 initialize_firebase()
@@ -79,12 +80,29 @@ async def search_tourist_spots(
     user_uid = await verify_firebase_token(request)
     print(f"Authenticated user: {user_uid}")
 
+    # 画像処理（存在チェック→保存）
+    if image is not None:
+        # 画像ありの場合
+        storage_path, actual_image_source = await process_search_image(
+            image=image,
+            text=text,
+            user_id=user_uid,
+            image_source="user_upload"
+        )
+    else:
+        # 画像なしの場合（既存画像チェック→生成）
+        storage_path, actual_image_source = await process_search_with_no_image(
+            text=text,
+            user_id=user_uid
+        )
+
     # リクエストデータ作成
     request_data = create_request_data_search(
         text=text,
         image_present=image is not None,
         text_source="user_input",
-        image_source="user_upload" if image else None
+        image_source=actual_image_source,
+        storage_path=storage_path
     )
 
     try:
