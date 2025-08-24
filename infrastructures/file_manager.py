@@ -1,4 +1,5 @@
 import os
+import re
 from typing import Optional
 from PIL import Image
 
@@ -93,4 +94,9 @@ class FileManager:
         Returns:
             生成されたファイル名
         """
-        return f"{prompt}{extension}"
+
+        """テキストからファイル名を生成"""
+        filename = re.sub(r'[^\w\s-]', '', prompt)
+        filename = re.sub(r'[-\s]+', '_', filename)
+        filename = filename.strip('_')
+        return f"{filename[:50] if len(filename) > 50 else filename}{extension}"

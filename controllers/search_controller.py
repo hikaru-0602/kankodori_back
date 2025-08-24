@@ -7,20 +7,7 @@ async def search_tourist_spots(
     text: Optional[str] = None,
     image: Optional[UploadFile] = None
 ) -> Dict[str, Any]:
-    """
-    観光地検索の処理
 
-    Args:
-        text: 検索テキスト
-        image: 検索画像
-        search_range: 検索範囲
-
-    Returns:
-        検索結果
-
-    Raises:
-        HTTPException: 入力パラメータが無効な場合
-    """
     # text の undefined/空文字チェック
     if text and (text.strip() == "" or text.strip().lower() == "undefined"):
         text = None

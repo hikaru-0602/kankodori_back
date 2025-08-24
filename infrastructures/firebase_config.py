@@ -1,10 +1,10 @@
-import json
 import firebase_admin
-from firebase_admin import credentials, storage, firestore
+from firebase_admin import credentials, storage, auth
 import os
 from PIL import Image
 from typing import Optional
 from dotenv import load_dotenv
+from fastapi import Request, HTTPException
 
 load_dotenv()
 
@@ -127,3 +127,28 @@ async def upload_pil_image_to_storage(image: Image.Image, storage_path: str) -> 
     except Exception as e:
         print(f"PIL画像アップロードエラー: {e}")
         return None
+
+async def verify_firebase_token(request: Request) -> str:
+    """
+    Firebase IDトークンを検証してUIDを返す
+
+    Returns:
+        ユーザーUID
+
+    Raises:
+        HTTPException: 認証失敗時
+    """
+
+    initialize_firebase()
+
+    auth_header = request.headers.get('authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        raise HTTPException(status_code=401, detail="Authorization header missing or invalid")
+
+    token = auth_header.split('Bearer ')[1]
+    try:
+        decoded_token = auth.verify_id_token(token)
+        return decoded_token['uid']
+    except Exception as e:
+        print(f"Token verification failed: {e}")
+        raise HTTPException(status_code=401, detail="Invalid token")

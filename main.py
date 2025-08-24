@@ -1,11 +1,10 @@
-from fastapi import FastAPI, File, Form, UploadFile, Request, HTTPException
+from fastapi import FastAPI, File, Form, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, Dict, Any
 import uvicorn
 import time
 import controllers.search_controller as search_controller
-from firebase_admin import auth
-from infrastructures.firebase_config import initialize_firebase
+from infrastructures.firebase_config import verify_firebase_token
 from services.logging_service import (
     save_api_log,
     create_request_data_search,
@@ -13,10 +12,7 @@ from services.logging_service import (
     create_response_data_search,
     create_response_data_suggest
 )
-from services.image_storage_service import process_search_image, process_search_with_no_image
-
-# Firebase初期化
-initialize_firebase()
+from services.image_storage_service import process_search_image
 
 app = FastAPI(
     title="観光地検索 API",
@@ -31,28 +27,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-async def verify_firebase_token(request: Request) -> str:
-    """
-    Firebase IDトークンを検証してUIDを返す
-
-    Returns:
-        ユーザーUID
-
-    Raises:
-        HTTPException: 認証失敗時
-    """
-    auth_header = request.headers.get('authorization')
-    if not auth_header or not auth_header.startswith('Bearer '):
-        raise HTTPException(status_code=401, detail="Authorization header missing or invalid")
-
-    token = auth_header.split('Bearer ')[1]
-    try:
-        decoded_token = auth.verify_id_token(token)
-        return decoded_token['uid']
-    except Exception as e:
-        print(f"Token verification failed: {e}")
-        raise HTTPException(status_code=401, detail="Invalid token")
 
 @app.get("/")
 async def root():
@@ -74,45 +48,57 @@ async def search_tourist_spots(
     - search_range指定で検索範囲を調整します
     - 条件に応じて指定されていない検索条件を生成します
     """
-    start_time = time.time()
 
     # Firebase認証
     user_uid = await verify_firebase_token(request)
-    print(f"Authenticated user: {user_uid}")
-
-    # 画像処理（存在チェック→保存）
-    if image is not None:
-        # 画像ありの場合
-        storage_path, actual_image_source = await process_search_image(
-            image=image,
-            text=text,
-            user_id=user_uid,
-            image_source="user_upload"
-        )
-    else:
-        # 画像なしの場合（既存画像チェック→生成）
-        storage_path, actual_image_source = await process_search_with_no_image(
-            text=text,
-            user_id=user_uid
-        )
-
-    # リクエストデータ作成
-    request_data = create_request_data_search(
-        text=text,
-        image_present=image is not None,
-        text_source="user_input",
-        image_source=actual_image_source,
-        storage_path=storage_path
-    )
+    #print(f"Authenticated user: {user_uid}")
 
     try:
         # API処理実行
         result = await search_controller.search_tourist_spots(text, image)
 
+        # メタデータから実際の値を取得
+        metadata = result.get("metadata", {})
+        internal = result.get("_internal", {})
+
+        actual_text = metadata.get("actual_text")
+        text_generated = metadata.get("text_generated", False)
+        image_generated = metadata.get("image_generated", False)
+        actual_image = internal.get("actual_image")
+
+        # テキストと画像のソースを判定
+        text_source = "generate" if text_generated else "user_input"
+        base_image_source = "generate" if image_generated else "user_upload"
+
+        # 画像処理（存在チェック→保存）
+        if actual_image is not None:
+            # 画像がある場合（アップロードまたは生成）
+            storage_path, final_image_source = await process_search_image(
+                image=actual_image,
+                text=actual_text,
+                user_id=user_uid,
+                image_source=base_image_source
+            )
+        else:
+            # 画像がない場合
+            storage_path, final_image_source = None, "none"
+
+        # リクエストデータ作成
+        request_data = create_request_data_search(
+            text=actual_text,
+            image_present=actual_image is not None,
+            text_source=text_source,
+            image_source=final_image_source,
+            storage_path=storage_path
+        )
+
+        # レスポンス用にinternalデータを削除
+        clean_result = {k: v for k, v in result.items() if k != "_internal"}
+
         # 成功時のログ保存
         response_data = create_response_data_search(
             status="success",
-            result=result,
+            result=clean_result,
             total_candidates=len(result.get('results', [])) if isinstance(result, dict) else None
         )
 
@@ -123,7 +109,7 @@ async def search_tourist_spots(
             response_data=response_data
         )
 
-        return result
+        return clean_result
 
     except Exception as e:
         # エラー時のログ保存
@@ -148,48 +134,13 @@ async def suggest_images(request: Request) -> Dict[str, Any]:
 
     ユーザーが選択可能な画像候補を提案
     """
-    start_time = time.time()
 
     # Firebase認証
     user_uid = await verify_firebase_token(request)
-    print(f"Authenticated user: {user_uid}")
-
-    # リクエストデータ作成
-    request_data = create_request_data_suggest()
-    try:
-        # API処理実行
-        result = await search_controller.suggest_images()
-
-        # 成功時のログ保存
-        response_data = create_response_data_suggest(
-            status="success",
-            result=result
-        )
-
-        await save_api_log(
-            user_id=user_uid,
-            api_endpoint="suggest-images",
-            request_data=request_data,
-            response_data=response_data
-        )
-
-        return result
-
-    except Exception as e:
-        # エラー時のログ保存
-        response_data = create_response_data_suggest(
-            status="error",
-            error_message=str(e)
-        )
-
-        await save_api_log(
-            user_id=user_uid,
-            api_endpoint="suggest-images",
-            request_data=request_data,
-            response_data=response_data
-        )
-
-        raise
+    #print(f"Authenticated user: {user_uid}")
+    # API処理実行
+    result = await search_controller.suggest_images()
+    return result
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
