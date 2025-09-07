@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, Form, UploadFile, Request
+from fastapi import FastAPI, File, Form, UploadFile, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, Dict, Any
 import uvicorn
@@ -23,7 +23,7 @@ app.add_middleware(
     allow_origins=["*"],  # 全てのオリジンを許可
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"],  # 全てのヘッダーを許可（ngrok-skip-browser-warningを含む）
 )
 
 @app.get("/")
