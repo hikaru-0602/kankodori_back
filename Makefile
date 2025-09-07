@@ -38,4 +38,11 @@ search:
 
 .PHONY: publish
 publish:
-	ngrok http 3110 --region jp
+	@echo "Starting ngrok..."
+	@ngrok http 3110 --region jp &
+	@echo "Waiting for ngrok to start..."
+	@sleep 3
+	@echo "Updating Firestore with ngrok URL..."
+	@python3 update_ngrok_url.py
+	@echo "✅ ngrok published and Firestore updated!"
+	@wait
