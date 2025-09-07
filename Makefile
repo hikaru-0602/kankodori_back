@@ -34,3 +34,8 @@ search:
 		-F "text=函館の絶景"
 
 .PHONY: search
+
+
+.PHONY: publish
+publish:
+	ngrok http 3110 --region jp

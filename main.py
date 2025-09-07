@@ -8,9 +8,7 @@ from infrastructures.firebase_config import verify_firebase_token
 from services.logging_service import (
     save_api_log,
     create_request_data_search,
-    create_request_data_suggest,
-    create_response_data_search,
-    create_response_data_suggest
+    create_response_data_search
 )
 from services.image_storage_service import process_search_image
 

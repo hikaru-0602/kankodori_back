@@ -81,8 +81,38 @@ paths:
                         - location
                         - text_similarity
                         - image_similarity
+                  metadata:
+                    type: object
+                    description: 検索処理のメタデータ
+                    properties:
+                      actual_text:
+                        type: string
+                        description: 実際に使用された検索テキスト
+                      text_generated:
+                        type: boolean
+                        description: テキストが自動生成されたかどうか
+                      image_generated:
+                        type: boolean
+                        description: 画像が自動生成されたかどうか
+                      has_image:
+                        type: boolean
+                        description: 画像が存在するかどうか
+                      original_text:
+                        type: string
+                        nullable: true
+                        description: 元の入力テキスト
+                      has_original_image:
+                        type: boolean
+                        description: 元の画像が存在するかどうか
+                    required:
+                      - actual_text
+                      - text_generated
+                      - image_generated
+                      - has_image
+                      - has_original_image
                 required:
                   - results
+                  - metadata
         "400":
           description: パラメータエラー
           content:
@@ -100,21 +130,26 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: string
-                  description: 画像ファイル名
-                minItems: 1
-                maxItems: 6
-                example:
-                  [
-                    "images (1).jpg",
-                    "IMG_20241221_200910.jpg",
-                    "IMG_7712.jpeg",
-                    "函館のきれいな海.jpg",
-                    "函館のとてもきれいな景色.jpg",
-                    "55FF9164-B5D7-4000-94F0-D78047B68EB2.jpeg"
-                  ]
+                type: object
+                properties:
+                  suggested_images:
+                    type: array
+                    items:
+                      type: string
+                      description: 画像ファイル名
+                    minItems: 1
+                    maxItems: 6
+                    example:
+                      [
+                        "images (1).jpg",
+                        "IMG_20241221_200910.jpg",
+                        "IMG_7712.jpeg",
+                        "函館のきれいな海.jpg",
+                        "函館のとてもきれいな景色.jpg",
+                        "55FF9164-B5D7-4000-94F0-D78047B68EB2.jpeg"
+                      ]
+                required:
+                  - suggested_images
 
 components:
   schemas:

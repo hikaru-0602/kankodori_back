@@ -18,7 +18,6 @@ class HuggingFaceImageClient:
                 return None
 
             self._client = InferenceClient(
-                provider="fal-ai",
                 api_key=api_key,
             )
 
