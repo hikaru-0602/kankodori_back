@@ -35,8 +35,8 @@ async def keyword(text: str) -> List[Dict[str, Any]]:
             pos = features[0]  # 主品詞
             surface = node.surface  # 表層形
 
-            # 指定した品詞かつ有効な単語の場合
-            if pos in target_pos and surface and len(surface) > 1:
+            # 指定した品詞かつ有効な単語の場合（1文字でもOK）
+            if pos in target_pos and surface and len(surface) >= 1:
                 keywords.append(surface)
 
         node = node.next
