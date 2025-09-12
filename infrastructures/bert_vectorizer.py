@@ -1,44 +1,40 @@
 import torch
 import numpy as np
-from transformers import BertJapaneseTokenizer, BertModel
+from sentence_transformers import SentenceTransformer
 from typing import Optional
 
 
 class BertVectorizer:
-    """日本語BERTモデルを使用したテキストベクトル化クラス"""
+    """日本語Sentence-BERTモデルを使用したテキストベクトル化クラス"""
 
     def __init__(self):
-        self.tokenizer = None
         self.model = None
         self._is_initialized = False
 
     def _initialize_model(self):
-        """BERTモデルとトークナイザーを初期化"""
+        """Sentence-BERTモデルを初期化"""
         if not self._is_initialized:
             try:
                 # 事前初期化済みモデルがあれば使用
                 import os
-                if os.path.exists('/app/models/bert_initialized.pth'):
-                    print("事前初期化済みBERTモデルを読み込み中...")
+                if os.path.exists('/app/models/sbert_initialized.pth'):
+                    print("事前初期化済みSentence-BERTモデルを読み込み中...")
                     import torch
-                    saved_data = torch.load('/app/models/bert_initialized.pth', map_location='cpu', weights_only=False)
-                    self.tokenizer = saved_data['tokenizer']
+                    saved_data = torch.load('/app/models/sbert_initialized.pth', map_location='cpu', weights_only=False)
                     self.model = saved_data['model']
-                    print("事前初期化済みBERTモデルの読み込み完了")
+                    print("事前初期化済みSentence-BERTモデルの読み込み完了")
                 else:
-                    # 従来通りダウンロード
-                    print("BERTモデルをダウンロード中...")
-                    model_name = 'cl-tohoku/bert-base-japanese-whole-word-masking'
-                    self.tokenizer = BertJapaneseTokenizer.from_pretrained(model_name)
-                    self.model = BertModel.from_pretrained(model_name)
-
-                    # 評価モードに設定
-                    self.model.eval()
+                    # 日本語のSentence-BERTモデルをダウンロード
+                    print("Sentence-BERTモデルをダウンロード中...")
+                    # sonoisa/sentence-bert-base-ja-mean-tokens-v2 は日本語に特化した高性能モデル
+                    model_name = 'sonoisa/sentence-bert-base-ja-mean-tokens-v2'
+                    self.model = SentenceTransformer(model_name)
+                    print("Sentence-BERTモデルのダウンロード完了")
 
                 self._is_initialized = True
 
             except Exception as e:
-                print(f"BERTモデル初期化エラー: {e}")
+                print(f"Sentence-BERTモデル初期化エラー: {e}")
                 raise e
 
     def vectorize_text(self, text: str) -> Optional[np.ndarray]:
@@ -59,26 +55,10 @@ class BertVectorizer:
                 print("空のテキストが入力されました")
                 return None
 
-            # テキストをトークン化
-            inputs = self.tokenizer(
-                text,
-                return_tensors='pt',
-                max_length=512,
-                truncation=True,
-                padding=True
-            )
+            # Sentence-BERTでエンコード（類似度計算に最適化された埋め込み）
+            vector = self.model.encode(text, convert_to_numpy=True)
 
-            # ベクトル化実行
-            with torch.no_grad():
-                outputs = self.model(**inputs)
-
-                # [CLS]トークンの出力を使用（文全体の表現）
-                cls_embedding = outputs.last_hidden_state[:, 0, :]
-
-                # numpy配列に変換して返却
-                vector = cls_embedding.squeeze().cpu().numpy()
-
-                return vector
+            return vector
 
         except Exception as e:
             print(f"テキストベクトル化エラー: {e}")

@@ -11,7 +11,7 @@ async def text_caluculate(text: str):
     vector = text_vector(text)
 
     # 3. npyファイルからベクトルデータ取得
-    features, labels = await get_feature("bert_ja_mean.npy")
+    features, labels = await get_feature("sentence_bert_ja_mean_ver2.npy")
 
     # 4. コサイン類似度計算とソート
     similarity_results = similarity_sort(filtered_data, vector, features, labels)
