@@ -2,7 +2,6 @@ from fastapi import FastAPI, File, Form, UploadFile, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, Dict, Any
 import uvicorn
-import time
 import controllers.search_controller as search_controller
 from infrastructures.firebase_config import verify_firebase_token
 from services.logging_service import (
