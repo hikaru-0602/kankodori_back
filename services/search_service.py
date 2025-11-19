@@ -50,6 +50,38 @@ async def search_tourist_spots(
     }
 
 
+async def search_with_url(
+    text: str,
+    image_url: str
+) -> Dict[str, Any]:
+    """
+    テキストと画像URLで検索する（バッチ検索用）
+
+    Args:
+        text: 検索テキスト
+        image_url: 画像のURL
+
+    Returns:
+        検索結果
+    """
+    # 画像URLをそのまま使用（image_serviceでダウンロード処理される）
+    text_similar, filtered_data = await text_caluculate(text)
+    image_similar = await image_caluculate(image_url, filtered_data)
+
+    # テキストと画像の類似度を統合
+    integrated_results = integrate_similarities(text_similar, image_similar)
+
+    return {
+        "results": integrated_results,
+        "metadata": {
+            "actual_text": text,
+            "image_url": image_url,
+            "text_generated": False,
+            "image_generated": False
+        }
+    }
+
+
 async def get_suggested_images() -> Dict[str, List[str]]:
     """
     画像提案処理

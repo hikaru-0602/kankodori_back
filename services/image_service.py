@@ -1,16 +1,23 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 from fastapi import UploadFile
 from services.vit import get_image_vector
 from services.firebase_service import get_feature, get_photo_data
 from services.similarity_service import similarity_sort
+from infrastructures.image_downloader import download_image_from_url
 
-async def image_caluculate(image: UploadFile, filtered_data: Optional[List[Dict[str, Any]]] = None):
+async def image_caluculate(image: Union[UploadFile, str, None], filtered_data: Optional[List[Dict[str, Any]]] = None):
     # imageがNoneの場合は空の結果を返す
     if image is None:
         return []
 
     # 1. 画像データを読み込み
-    if hasattr(image, 'read'):
+    if isinstance(image, str):
+        # URL文字列の場合
+        image_data = await download_image_from_url(image)
+        if image_data is None:
+            print(f"画像URLからのダウンロード失敗: {image}")
+            return []
+    elif hasattr(image, 'read'):
         # UploadFileの場合
         image_data = await image.read()
     else:

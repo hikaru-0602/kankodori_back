@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, Form, UploadFile, Request, Response
+from fastapi import FastAPI, File, Form, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, Dict, Any
 import uvicorn
@@ -138,6 +138,86 @@ async def suggest_images(request: Request) -> Dict[str, Any]:
     # API処理実行
     result = await search_controller.suggest_images()
     return result
+
+
+@app.post("/batch-search")
+async def batch_search(request: Request) -> Dict[str, Any]:
+    """
+    バッチ検索（実験用）
+
+    test/set.txt ファイルに記載された[テキスト,画像URL]のペアで一括検索を実行
+    """
+
+    import os
+    import csv
+
+    # test/set.txt を読み込み
+    set_file_path = os.path.join(os.path.dirname(__file__), "test", "set.txt")
+
+    if not os.path.exists(set_file_path):
+        return {"error": "test/set.txt が見つかりません"}
+
+    results = []
+    total_count = 0
+    success_count = 0
+    error_count = 0
+
+    try:
+        with open(set_file_path, 'r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            for idx, row in enumerate(reader, start=1):
+                if len(row) < 2:
+                    print(f"行 {idx}: スキップ（データ不足）")
+                    error_count += 1
+                    continue
+
+                text = row[0].strip()
+                image_url = row[1].strip()
+                total_count += 1
+
+                print(f"[{idx}] 検索中: テキスト='{text}', URL={image_url[:60]}...")
+
+                try:
+                    # search_service の search_with_url を使用
+                    from services.search_service import search_with_url
+                    search_result = await search_with_url(text, image_url)
+
+                    results.append({
+                        "index": idx,
+                        "text": text,
+                        "image_url": image_url,
+                        "status": "success",
+                        "result": search_result
+                    })
+                    success_count += 1
+                    print(f"[{idx}] 成功: {len(search_result.get('results', []))} 件の結果")
+
+                except Exception as e:
+                    print(f"[{idx}] エラー: {str(e)}")
+                    results.append({
+                        "index": idx,
+                        "text": text,
+                        "image_url": image_url,
+                        "status": "error",
+                        "error": str(e)
+                    })
+                    error_count += 1
+
+        return {
+            "summary": {
+                "total": total_count,
+                "success": success_count,
+                "error": error_count
+            },
+            "results": results
+        }
+
+    except Exception as e:
+        print(f"バッチ検索エラー: {str(e)}")
+        return {
+            "error": f"バッチ検索処理中にエラーが発生しました: {str(e)}"
+        }
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

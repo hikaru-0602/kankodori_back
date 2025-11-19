@@ -247,6 +247,7 @@ venv.bak/
 test/
 api/
 firebase-key.json
+error_handling_example.py
 
 # Spyder project settings
 .spyderproject
