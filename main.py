@@ -146,71 +146,126 @@ async def batch_search(request: Request) -> Dict[str, Any]:
     バッチ検索（実験用）
 
     test/set.txt ファイルに記載された[テキスト,画像URL]のペアで一括検索を実行
+    結果は test/batch_search_results.json にキャッシュされる
     """
 
     import os
     import csv
+    import json
 
-    # test/set.txt を読み込み
-    set_file_path = os.path.join(os.path.dirname(__file__), "test", "set.txt")
+    # ファイルパス設定
+    test_dir = os.path.join(os.path.dirname(__file__), "test")
+    set_file_path = os.path.join(test_dir, "set.txt")
+    cache_file_path = os.path.join(test_dir, "batch_search_results.json")
 
+    # キャッシュファイルが存在する場合は読み込んで返す
+    if os.path.exists(cache_file_path):
+        print("キャッシュファイルが見つかりました。キャッシュから結果を返します。")
+        try:
+            with open(cache_file_path, 'r', encoding='utf-8') as f:
+                cached_data = json.load(f)
+                return cached_data
+        except Exception as e:
+            print(f"キャッシュ読み込みエラー: {str(e)}")
+            # キャッシュ読み込み失敗時は処理を続行
+
+    # set.txt の存在確認
     if not os.path.exists(set_file_path):
         return {"error": "test/set.txt が見つかりません"}
 
     results = []
-    total_count = 0
-    success_count = 0
-    error_count = 0
+    query_image_filenames = []
+
+    # 画像保存用ディレクトリ
+    query_dir = os.path.join(test_dir, "query")
+    result_dir = os.path.join(test_dir, "result")
 
     try:
+        from services.search_service import search_with_url_and_weights
+        from services.batch_image_service import (
+            save_query_image,
+            save_result_image,
+            save_query_images_json
+        )
+
         with open(set_file_path, 'r', encoding='utf-8') as f:
             reader = csv.reader(f)
             for idx, row in enumerate(reader, start=1):
                 if len(row) < 2:
                     print(f"行 {idx}: スキップ（データ不足）")
-                    error_count += 1
                     continue
 
                 text = row[0].strip()
                 image_url = row[1].strip()
-                total_count += 1
 
                 print(f"[{idx}] 検索中: テキスト='{text}', URL={image_url[:60]}...")
 
                 try:
-                    # search_service の search_with_url を使用
-                    from services.search_service import search_with_url
-                    search_result = await search_with_url(text, image_url)
+                    # 3つの重み比率で検索
+                    search_result = await search_with_url_and_weights(text, image_url)
 
-                    results.append({
-                        "index": idx,
-                        "text": text,
-                        "image_url": image_url,
-                        "status": "success",
-                        "result": search_result
-                    })
-                    success_count += 1
-                    print(f"[{idx}] 成功: {len(search_result.get('results', []))} 件の結果")
+                    result_item = {
+                        "id": idx,
+                        "query_text": text,
+                        "query_image_url": image_url,
+                        "text_100_image_0": search_result.get("text_100_image_0"),
+                        "text_50_image_50": search_result.get("text_50_image_50"),
+                        "text_0_image_100": search_result.get("text_0_image_100")
+                    }
+
+                    results.append(result_item)
+                    print(f"[{idx}] 成功")
+
+                    # 画像保存処理（このエンドポイントのみ）
+                    # 1. クエリ画像を保存
+                    query_filename = await save_query_image(image_url, idx, query_dir)
+                    if query_filename:
+                        query_image_filenames.append(query_filename)
+
+                    # 2. 結果画像を保存（3つ、ファイル名は観光地ID）
+                    await save_result_image(
+                        search_result.get("text_100_image_0"),
+                        result_dir
+                    )
+                    await save_result_image(
+                        search_result.get("text_50_image_50"),
+                        result_dir
+                    )
+                    await save_result_image(
+                        search_result.get("text_0_image_100"),
+                        result_dir
+                    )
 
                 except Exception as e:
                     print(f"[{idx}] エラー: {str(e)}")
-                    results.append({
-                        "index": idx,
-                        "text": text,
-                        "image_url": image_url,
-                        "status": "error",
+                    # エラーの場合もNullで記録
+                    result_item = {
+                        "id": idx,
+                        "query_text": text,
+                        "query_image_url": image_url,
+                        "text_100_image_0": None,
+                        "text_50_image_50": None,
+                        "text_0_image_100": None,
                         "error": str(e)
-                    })
-                    error_count += 1
+                    }
+                    results.append(result_item)
 
-        return {
-            "summary": {
-                "total": total_count,
-                "success": success_count,
-                "error": error_count
-            },
-            "results": results
-        }
+        # 結果をJSONとして整形
+        response_data = {"results": results}
+
+        # JSONファイルに保存
+        try:
+            with open(cache_file_path, 'w', encoding='utf-8') as f:
+                json.dump(response_data, f, ensure_ascii=False, indent=2)
+            print(f"結果を {cache_file_path} に保存しました")
+        except Exception as e:
+            print(f"JSON保存エラー: {str(e)}")
+
+        # クエリ画像のファイル名リストをJSONとして保存
+        if query_image_filenames:
+            save_query_images_json(query_image_filenames, test_dir)
+
+        return response_data
 
     except Exception as e:
         print(f"バッチ検索エラー: {str(e)}")
