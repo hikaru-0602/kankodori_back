@@ -201,7 +201,7 @@ async def batch_search(request: Request) -> Dict[str, Any]:
                 print(f"[{idx}] 検索中: テキスト='{text}', URL={image_url[:60]}...")
 
                 try:
-                    # 3つの重み比率で検索
+                    # 5つの重み比率で検索
                     search_result = await search_with_url_and_weights(text, image_url)
 
                     result_item = {
@@ -209,7 +209,9 @@ async def batch_search(request: Request) -> Dict[str, Any]:
                         "query_text": text,
                         "query_image_url": image_url,
                         "text_100_image_0": search_result.get("text_100_image_0"),
+                        "text_75_image_25": search_result.get("text_75_image_25"),
                         "text_50_image_50": search_result.get("text_50_image_50"),
+                        "text_25_image_75": search_result.get("text_25_image_75"),
                         "text_0_image_100": search_result.get("text_0_image_100")
                     }
 
@@ -222,13 +224,21 @@ async def batch_search(request: Request) -> Dict[str, Any]:
                     if query_filename:
                         query_image_filenames.append(query_filename)
 
-                    # 2. 結果画像を保存（3つ、ファイル名は観光地ID）
+                    # 2. 結果画像を保存（5つ、ファイル名は観光地ID）
                     await save_result_image(
                         search_result.get("text_100_image_0"),
                         result_dir
                     )
                     await save_result_image(
+                        search_result.get("text_75_image_25"),
+                        result_dir
+                    )
+                    await save_result_image(
                         search_result.get("text_50_image_50"),
+                        result_dir
+                    )
+                    await save_result_image(
+                        search_result.get("text_25_image_75"),
                         result_dir
                     )
                     await save_result_image(
@@ -244,7 +254,9 @@ async def batch_search(request: Request) -> Dict[str, Any]:
                         "query_text": text,
                         "query_image_url": image_url,
                         "text_100_image_0": None,
+                        "text_75_image_25": None,
                         "text_50_image_50": None,
+                        "text_25_image_75": None,
                         "text_0_image_100": None,
                         "error": str(e)
                     }

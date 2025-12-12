@@ -87,14 +87,14 @@ async def search_with_url_and_weights(
     image_url: str
 ) -> Dict[str, Any]:
     """
-    テキストと画像URLで検索し、3つの重み比率で統合した結果を返す
+    テキストと画像URLで検索し、5つの重み比率で統合した結果を返す
 
     Args:
         text: 検索テキスト
         image_url: 画像のURL
 
     Returns:
-        3つの統合比率（100:0, 50:50, 0:100）での上位1件ずつ
+        5つの統合比率（100:0, 75:25, 50:50, 25:75, 0:100）での上位1件ずつ
     """
     from services.integration_service import integrate_with_weights
 
@@ -102,14 +102,18 @@ async def search_with_url_and_weights(
     text_similar, filtered_data = await text_caluculate(text)
     image_similar = await image_caluculate(image_url, filtered_data)
 
-    # 3つの統合比率で計算
+    # 5つの統合比率で計算
     result_100_0 = integrate_with_weights(text_similar, image_similar, 1.0, 0.0, top_n=1)
+    result_75_25 = integrate_with_weights(text_similar, image_similar, 0.75, 0.25, top_n=1)
     result_50_50 = integrate_with_weights(text_similar, image_similar, 0.5, 0.5, top_n=1)
+    result_25_75 = integrate_with_weights(text_similar, image_similar, 0.25, 0.75, top_n=1)
     result_0_100 = integrate_with_weights(text_similar, image_similar, 0.0, 1.0, top_n=1)
 
     return {
         "text_100_image_0": result_100_0[0] if result_100_0 else None,
+        "text_75_image_25": result_75_25[0] if result_75_25 else None,
         "text_50_image_50": result_50_50[0] if result_50_50 else None,
+        "text_25_image_75": result_25_75[0] if result_25_75 else None,
         "text_0_image_100": result_0_100[0] if result_0_100 else None
     }
 
