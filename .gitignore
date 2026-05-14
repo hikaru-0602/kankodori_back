@@ -304,7 +304,7 @@ pip-selfcheck.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,virtualenv,jetbrains
 
-.
+
 .DS_Store
 ._*
 .Spotlight-V100
