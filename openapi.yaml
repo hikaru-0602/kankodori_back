@@ -1,23 +1,58 @@
 openapi: 3.0.3
 info:
-  title: 観光地検索システム API
-  description: テキストと画像を組み合わせた観光地検索システム
+  title: 観光地検索 API
+  description: テキストと画像を用いた観光地検索システム
   version: 1.0.0
 
 servers:
   - url: http://localhost:8000
     description: 開発環境
+  - url: https://your-production-url.com
+    description: 本番環境
+
+security:
+  - FirebaseAuth: []
 
 paths:
+  /:
+    get:
+      summary: ヘルスチェック
+      description: APIの稼働状態を確認
+      tags:
+        - Health
+      security: []
+      responses:
+        "200":
+          description: API稼働中
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "こんにちは！APIへようこそ。"
+
   /search:
     post:
       summary: 観光地検索
       description: |
-        テキストと画像を組み合わせて観光地を検索します。
+        テキストや画像から観光地を検索します。
+
+        **動作仕様:**
         - text, imageのどちらか一方は必須
-        - 不足している方は自動生成されます
-        - テキスト・画像両方の類似度を計算して返却します
-        - フロントエンド側で類似度の加算・ソートを実行します
+        - テキストのみ入力の場合、画像が自動生成されます
+        - 画像のみ入力の場合、テキストが自動生成されます
+        - テキストと画像の類似度を個別に計算して返却します
+        - フロントエンド側で類似度の統合・ソートを実行してください
+
+        **認証:**
+        - Firebase Authentication必須
+        - Authorizationヘッダーに`Bearer <ID_TOKEN>`を含めてください
+      tags:
+        - Search
+      security:
+        - FirebaseAuth: []
       requestBody:
         required: true
         content:
@@ -27,134 +62,356 @@ paths:
               properties:
                 text:
                   type: string
-                  description: 検索テキスト
-                  example: "美しい海岸線"
+                  description: 検索テキスト（imageと排他的に必須）
+                  example: "美しい海岸線と青い空"
+                  nullable: true
                 image:
                   type: string
                   format: binary
-                  description: 検索画像
+                  description: 検索画像ファイル（textと排他的に必須）
+                  nullable: true
               anyOf:
                 - required: ["text"]
                 - required: ["image"]
+            examples:
+              text_only:
+                summary: テキストのみで検索
+                value:
+                  text: "美しい海岸線"
+              image_only:
+                summary: 画像のみで検索
+                value:
+                  image: "(binary data)"
+              both:
+                summary: テキストと画像で検索
+                value:
+                  text: "美しい海岸線"
+                  image: "(binary data)"
       responses:
         "200":
-          description: 検索結果
+          description: 検索成功
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  results:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          description: 観光地ID
-                          example: "place_001"
-                        name:
-                          type: string
-                          description: 観光地名
-                          example: "美ら海水族館"
-                        location:
-                          type: string
-                          description: 観光地の場所
-                          example: "沖縄県本部町"
-                        text_similarity:
-                          type: number
-                          format: float
-                          description: テキスト類似度スコア (0-1の範囲)
-                          minimum: 0
-                          maximum: 1
-                          example: 0.85
-                        image_similarity:
-                          type: number
-                          format: float
-                          description: 画像類似度スコア (0-1の範囲)
-                          minimum: 0
-                          maximum: 1
-                          example: 0.78
-                      required:
-                        - id
-                        - name
-                        - location
-                        - text_similarity
-                        - image_similarity
-                  metadata:
-                    type: object
-                    description: 検索処理のメタデータ
-                    properties:
-                      actual_text:
-                        type: string
-                        description: 実際に使用された検索テキスト
-                      text_generated:
-                        type: boolean
-                        description: テキストが自動生成されたかどうか
-                      image_generated:
-                        type: boolean
-                        description: 画像が自動生成されたかどうか
-                      has_image:
-                        type: boolean
-                        description: 画像が存在するかどうか
-                      original_text:
-                        type: string
-                        nullable: true
-                        description: 元の入力テキスト
-                      has_original_image:
-                        type: boolean
-                        description: 元の画像が存在するかどうか
-                    required:
-                      - actual_text
-                      - text_generated
-                      - image_generated
-                      - has_image
-                      - has_original_image
-                required:
-                  - results
-                  - metadata
+                $ref: "#/components/schemas/SearchResponse"
         "400":
-          description: パラメータエラー
+          description: リクエストパラメータエラー
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPException"
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                missing_params:
+                  summary: パラメータ不足
+                  value:
+                    detail: "text または image のいずれかは必須です"
+        "401":
+          description: 認証エラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                unauthorized:
+                  summary: 認証失敗
+                  value:
+                    detail: "認証に失敗しました"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /suggest-images:
     get:
       summary: 画像提案
-      description: システム保有画像からランダムに6枚を提案
+      description: |
+        ユーザーが選択可能な画像候補をランダムに提案します。
+
+        **動作仕様:**
+        - api/query_imageディレクトリから最大6枚をランダム選択
+        - 画像数が6枚以下の場合は全て返却
+        - ファイル名のみを返却（画像データは別途取得が必要）
+      tags:
+        - Search
+      security:
+        - FirebaseAuth: []
       responses:
         "200":
           description: 提案画像リスト
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  suggested_images:
-                    type: array
-                    items:
-                      type: string
-                      description: 画像ファイル名
-                    minItems: 1
-                    maxItems: 6
-                    example:
-                      [
-                        "images (1).jpg",
-                        "IMG_20241221_200910.jpg",
-                        "IMG_7712.jpeg",
-                        "函館のきれいな海.jpg",
-                        "函館のとてもきれいな景色.jpg",
-                        "55FF9164-B5D7-4000-94F0-D78047B68EB2.jpeg"
-                      ]
-                required:
-                  - suggested_images
+                $ref: "#/components/schemas/SuggestImagesResponse"
+        "401":
+          description: 認証エラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /batch-search:
+    post:
+      summary: バッチ検索（実験用）
+      description: |
+        test/set.txt ファイルに記載された[テキスト,画像URL]のペアで一括検索を実行します。
+
+        **動作仕様:**
+        - test/set.txtをCSV形式で読み込み（形式: テキスト,画像URL）
+        - 各行について5つの重み比率（100:0, 75:25, 50:50, 25:75, 0:100）で検索
+        - 結果はtest/batch_search_results.jsonにキャッシュ
+        - キャッシュが存在する場合はキャッシュを返却
+        - クエリ画像・結果画像も保存
+
+        **注意:**
+        - このエンドポイントは実験・評価用です
+        - 本番環境では使用しないでください
+      tags:
+        - Experimental
+      security:
+        - FirebaseAuth: []
+      responses:
+        "200":
+          description: バッチ検索結果
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchSearchResponse"
+        "401":
+          description: 認証エラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
 components:
+  securitySchemes:
+    FirebaseAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Firebase Authentication IDトークン
+
   schemas:
-    HTTPException:
+    SearchResponse:
       type: object
+      description: 検索結果レスポンス
+      properties:
+        results:
+          type: array
+          description: 検索結果の配列（全候補を返却、ソートは未実施）
+          items:
+            $ref: "#/components/schemas/SimilarityResult"
+        metadata:
+          $ref: "#/components/schemas/SearchMetadata"
+      required:
+        - results
+        - metadata
+      example:
+        results:
+          - id: "place_001"
+            name: "美ら海水族館"
+            location: "沖縄県本部町"
+            text_similarity: 0.85
+            image_similarity: 0.78
+          - id: "place_042"
+            name: "函館山"
+            location: "北海道函館市"
+            text_similarity: 0.72
+            image_similarity: 0.91
+        metadata:
+          actual_text: "美しい海岸線と青い空"
+          text_generated: false
+          image_generated: true
+          has_image: true
+          original_text: "美しい海岸線と青い空"
+          has_original_image: false
+
+    SimilarityResult:
+      type: object
+      description: 個別の観光地の類似度結果
+      properties:
+        id:
+          type: string
+          description: 観光地ID
+          example: "place_001"
+        name:
+          type: string
+          description: 観光地名
+          example: "美ら海水族館"
+        location:
+          type: string
+          description: 観光地の場所
+          example: "沖縄県本部町"
+        text_similarity:
+          type: number
+          format: float
+          description: テキスト類似度スコア（コサイン類似度、0～1の範囲）
+          minimum: 0
+          maximum: 1
+          example: 0.85
+        image_similarity:
+          type: number
+          format: float
+          description: 画像類似度スコア（コサイン類似度、0～1の範囲）
+          minimum: 0
+          maximum: 1
+          example: 0.78
+      required:
+        - id
+        - name
+        - location
+        - text_similarity
+        - image_similarity
+
+    SearchMetadata:
+      type: object
+      description: 検索処理のメタ情報
+      properties:
+        actual_text:
+          type: string
+          description: 実際に検索に使用されたテキスト（生成された場合も含む）
+          example: "美しい海岸線と青い空"
+        text_generated:
+          type: boolean
+          description: テキストが自動生成されたかどうか
+          example: false
+        image_generated:
+          type: boolean
+          description: 画像が自動生成されたかどうか
+          example: true
+        has_image:
+          type: boolean
+          description: 画像が存在するかどうか（生成含む）
+          example: true
+        original_text:
+          type: string
+          nullable: true
+          description: ユーザーが入力した元のテキスト（Noneの場合もあり）
+          example: "美しい海岸線と青い空"
+        has_original_image:
+          type: boolean
+          description: ユーザーが元の画像をアップロードしたかどうか
+          example: false
+      required:
+        - actual_text
+        - text_generated
+        - image_generated
+        - has_image
+        - has_original_image
+
+    SuggestImagesResponse:
+      type: object
+      description: 画像提案レスポンス
+      properties:
+        suggested_images:
+          type: array
+          description: 提案される画像ファイル名の配列（1～6件）
+          items:
+            type: string
+            description: 画像ファイル名
+          minItems: 1
+          maxItems: 6
+          example:
+            - "images (1).jpg"
+            - "IMG_20241221_200910.jpg"
+            - "IMG_7712.jpeg"
+            - "函館のきれいな海.jpg"
+            - "函館のとてもきれいな景色.jpg"
+            - "55FF9164-B5D7-4000-94F0-D78047B68EB2.jpeg"
+      required:
+        - suggested_images
+
+    BatchSearchResponse:
+      type: object
+      description: バッチ検索結果レスポンス
+      properties:
+        results:
+          type: array
+          description: バッチ検索結果の配列
+          items:
+            $ref: "#/components/schemas/BatchSearchResultItem"
+      required:
+        - results
+
+    BatchSearchResultItem:
+      type: object
+      description: バッチ検索の個別結果
+      properties:
+        id:
+          type: integer
+          description: クエリID（set.txtの行番号）
+          example: 1
+        query_text:
+          type: string
+          description: クエリテキスト
+          example: "美しい海岸線"
+        query_image_url:
+          type: string
+          description: クエリ画像URL
+          example: "https://example.com/image.jpg"
+        text_100_image_0:
+          $ref: "#/components/schemas/WeightedSearchResult"
+        text_75_image_25:
+          $ref: "#/components/schemas/WeightedSearchResult"
+        text_50_image_50:
+          $ref: "#/components/schemas/WeightedSearchResult"
+        text_25_image_75:
+          $ref: "#/components/schemas/WeightedSearchResult"
+        text_0_image_100:
+          $ref: "#/components/schemas/WeightedSearchResult"
+        error:
+          type: string
+          nullable: true
+          description: エラーメッセージ（エラー発生時のみ）
+      required:
+        - id
+        - query_text
+        - query_image_url
+
+    WeightedSearchResult:
+      type: object
+      nullable: true
+      description: 重み付き検索結果（テキスト・画像の重み比率で統合されたトップ1件）
+      properties:
+        id:
+          type: string
+          description: 観光地ID
+        name:
+          type: string
+          description: 観光地名
+        location:
+          type: string
+          description: 観光地の場所
+        text_similarity:
+          type: number
+          format: float
+          description: テキスト類似度
+        image_similarity:
+          type: number
+          format: float
+          description: 画像類似度
+        integrated_score:
+          type: number
+          format: float
+          description: 統合スコア（重み付き合計）
+
+    ErrorResponse:
+      type: object
+      description: エラーレスポンス
       properties:
         detail:
           type: string
