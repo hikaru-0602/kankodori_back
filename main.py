@@ -13,7 +13,7 @@ from services.image_storage_service import process_search_image
 
 app = FastAPI(
     title="観光地検索 API",
-    description="テキストや画像から観光地検索",
+    description="テキストと画像を用いた観光地検索",
     version="1.0.0"
 )
 
