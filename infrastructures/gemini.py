@@ -54,14 +54,19 @@ def generate_text_from_image(pil_image: Image.Image) -> Optional[str]:
 出力は日本語で行ってください。"""
 
         response = client.models.generate_content(
-            model='gemini-2.0-flash-exp',
+            model='gemini-3.1-flash-lite',
             contents=[
                 prompt,
                 types.Part.from_bytes(data=img_bytes, mime_type='image/jpeg'),
             ],
         )
 
-        return response.text
+        generated_text = response.text
+
+        # 生成されたテキストをログ出力
+        print(f"[Gemini] 生成されたテキスト: {generated_text}")
+
+        return generated_text
 
     except Exception as e:
         print(f"テキスト生成エラー: {str(e)}")

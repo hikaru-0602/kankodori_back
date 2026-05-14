@@ -67,6 +67,10 @@ def generate_text_from_image(pil_image: Image.Image) -> Optional[str]:
 
         # テキストデコード
         generated_text = processor.decode(output[0], skip_special_tokens=True)
+
+        # 生成されたテキストをログ出力（英語）
+        print(f"[BLIP] 生成されたテキスト（英語）: {generated_text}")
+
         return generated_text
 
     except Exception as e:
