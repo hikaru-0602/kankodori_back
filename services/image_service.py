@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Optional, Union
 from fastapi import UploadFile
 from repositories.storage_repository import StorageRepository
-from services.similarity_service import similarity_sort
+from services.similarity_service import image_similarity_sort
 from infrastructures.image_downloader import download_image_from_url
 from infrastructures.vit_vectorizer import process_image, extract_features
 
@@ -58,6 +58,6 @@ async def image_caluculate(image: Union[UploadFile, str, None], filtered_data: O
     features, labels = result
 
     # 4. コサイン類似度を計算してソート
-    similarity_results = similarity_sort(filtered_data, vector, features, labels)
+    similarity_results = image_similarity_sort(filtered_data, vector, features, labels)
 
     return similarity_results

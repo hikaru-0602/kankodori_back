@@ -1,7 +1,7 @@
 from services.keyword_filter_service import keyword
 from infrastructures.bert_vectorizer import vectorize_text as text_vector
 from repositories.storage_repository import StorageRepository
-from services.similarity_service import similarity_sort
+from services.similarity_service import text_similarity_sort
 
 # モジュールレベルでシングルトンインスタンスを保持
 _storage_repo = StorageRepository()
@@ -26,6 +26,6 @@ async def text_caluculate(text: str):
     features, labels = result
 
     # 4. コサイン類似度計算とソート
-    similarity_results = similarity_sort(filtered_data, vector, features, labels)
+    similarity_results = text_similarity_sort(filtered_data, vector, features, labels)
 
     return similarity_results, filtered_data
