@@ -2,8 +2,8 @@ import json
 import os
 import numpy as np
 from typing import Optional, List, Dict, Any
-from firebase_admin import storage
 from infrastructures.firebase_config import initialize_firebase, download_storage, upload_storage
+from infrastructures import firebase_storage
 
 
 class StorageRepository:
@@ -30,14 +30,8 @@ class StorageRepository:
         Returns:
             存在する場合True、それ以外False
         """
-        try:
-            self._ensure_initialized()
-            bucket = storage.bucket()
-            blob = bucket.blob(blob_path)
-            return blob.exists()
-        except Exception as e:
-            print(f"Blob存在チェックエラー ({blob_path}): {e}")
-            return False
+        self._ensure_initialized()
+        return await firebase_storage.check_blob_exists(blob_path)
 
     async def save_blob(
         self,
@@ -58,19 +52,12 @@ class StorageRepository:
         Returns:
             成功時True、失敗時False
         """
-        try:
-            self._ensure_initialized()
-            bucket = storage.bucket()
-            blob = bucket.blob(blob_path)
-            blob.upload_from_string(data, content_type=content_type)
-
-            if make_public:
-                blob.make_public()
-
+        self._ensure_initialized()
+        url = await firebase_storage.upload_blob(blob_path, data, content_type, make_public)
+        if url:
             print(f"Blob保存成功: {blob_path}")
             return True
-        except Exception as e:
-            print(f"Blob保存エラー ({blob_path}): {e}")
+        else:
             return False
 
     async def get_blob_url(self, blob_path: str) -> Optional[str]:
@@ -83,18 +70,8 @@ class StorageRepository:
         Returns:
             公開URL、存在しない場合はNone
         """
-        try:
-            self._ensure_initialized()
-            bucket = storage.bucket()
-            blob = bucket.blob(blob_path)
-
-            if blob.exists():
-                blob.make_public()
-                return blob.public_url
-            return None
-        except Exception as e:
-            print(f"URL取得エラー ({blob_path}): {e}")
-            return None
+        self._ensure_initialized()
+        return await firebase_storage.get_blob_public_url(blob_path)
 
     async def list_blobs(self, prefix: str) -> List[str]:
         """
@@ -106,21 +83,17 @@ class StorageRepository:
         Returns:
             ファイル名のリスト
         """
-        try:
-            self._ensure_initialized()
-            bucket = storage.bucket()
-            blobs = bucket.list_blobs(prefix=prefix)
+        self._ensure_initialized()
+        blob_names = await firebase_storage.list_blobs_with_prefix(prefix)
 
-            filenames = []
-            for blob in blobs:
-                filename = blob.name.replace(prefix, "")
-                if filename:
-                    filenames.append(filename)
+        # プレフィックスを除去してファイル名のみを返す
+        filenames = []
+        for blob_name in blob_names:
+            filename = blob_name.replace(prefix, "")
+            if filename:
+                filenames.append(filename)
 
-            return filenames
-        except Exception as e:
-            print(f"Blob一覧取得エラー ({prefix}): {e}")
-            return []
+        return filenames
 
     # ==================== JSONファイル操作 ====================
 
@@ -139,7 +112,8 @@ class StorageRepository:
 
             local_path = f"/tmp/{os.path.basename(storage_path)}"
 
-            success = await download_storage(storage_path, local_path)
+            # firebase_storageを使用してダウンロード
+            success = await firebase_storage.download_blob_to_file(storage_path, local_path)
             if not success:
                 return None
 
@@ -170,17 +144,19 @@ class StorageRepository:
             成功時True、失敗時False
         """
         try:
+            self._ensure_initialized()
             temp_path = f"/tmp/{os.path.basename(storage_path)}"
 
             with open(temp_path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
 
-            success = await upload_storage(temp_path, storage_path)
+            # firebase_storageを使用してアップロード
+            url = await firebase_storage.upload_file_to_blob(temp_path, storage_path, make_public=True)
 
             if os.path.exists(temp_path):
                 os.remove(temp_path)
 
-            return success is not None
+            return url is not None
         except Exception as e:
             print(f"JSON保存エラー ({storage_path}): {e}")
             return False
@@ -236,7 +212,8 @@ class StorageRepository:
             filename = os.path.basename(storage_path)
             local_path = f"/tmp/{filename}"
 
-            success = await download_storage(storage_path, local_path)
+            # firebase_storageを使用してダウンロード
+            success = await firebase_storage.download_blob_to_file(storage_path, local_path)
             if not success:
                 return None
 
@@ -262,6 +239,8 @@ class StorageRepository:
             成功時True、失敗時False
         """
         try:
+            self._ensure_initialized()
+
             if not storage_path.endswith('.npy'):
                 storage_path += '.npy'
 
@@ -269,12 +248,14 @@ class StorageRepository:
             temp_path = f"/tmp/{filename}"
 
             np.save(temp_path, data)
-            success = await upload_storage(temp_path, storage_path)
+
+            # firebase_storageを使用してアップロード
+            url = await firebase_storage.upload_file_to_blob(temp_path, storage_path, make_public=True)
 
             if os.path.exists(temp_path):
                 os.remove(temp_path)
 
-            return success is not None
+            return url is not None
         except Exception as e:
             print(f"npy保存エラー ({storage_path}): {e}")
             return False

@@ -1,14 +1,8 @@
 from typing import Optional, Dict, Any
-from datetime import datetime, timezone
-from firebase_admin import firestore
-from infrastructures.firebase_config import initialize_firebase
+from repositories.log_repository import LogRepository
 
-# Firestore初期化
-initialize_firebase()
-
-def get_firestore_client():
-    """Firestoreクライアントを取得"""
-    return firestore.client()
+# LogRepositoryインスタンス
+_log_repository = LogRepository()
 
 async def save_api_log(
     user_id: str,
@@ -30,28 +24,12 @@ async def save_api_log(
     Returns:
         保存成功時True、失敗時False
     """
-    try:
-        log_data = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "api_endpoint": api_endpoint,
-            "request_data": request_data,
-            "response_data": response_data
-        }
-
-        # Firestoreに保存（ユーザーごとのサブコレクション）
-        db = get_firestore_client()
-        doc_ref = db.collection('users').document(user_id).collection('api_logs').document()
-        doc_ref.set(log_data)
-
-        print(f"API log saved: {api_endpoint} by user {user_id}")
-        return True
-
-    except Exception as e:
-        import traceback
-        print(f"ログ保存エラー詳細: {e}")
-        print(f"エラータイプ: {type(e)}")
-        print(f"トレースバック: {traceback.format_exc()}")
-        return False
+    return await _log_repository.save_api_log(
+        user_id=user_id,
+        api_endpoint=api_endpoint,
+        request_data=request_data,
+        response_data=response_data
+    )
 
 def create_request_data_search(
     text: Optional[str],
