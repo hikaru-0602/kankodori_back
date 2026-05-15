@@ -1,5 +1,5 @@
 import random
-from typing import List, Dict, Any
+from typing import List, Dict
 from services.firebase_service import get_api_query_images
 
 async def random_suggest() -> Dict[str, List[str]]:
