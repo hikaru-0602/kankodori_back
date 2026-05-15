@@ -14,7 +14,7 @@ from infrastructures.image_processor import ImageProcessor
 # else:
 #     from infrastructures.blip_client import generate_text_from_image
 
-from infrastructures.gemini import generate_text_from_image
+from infrastructures.gemini_client import generate_text_from_image
 
 async def text_generate(image: UploadFile) -> Optional[str]:
     """

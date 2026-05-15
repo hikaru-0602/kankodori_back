@@ -1,6 +1,9 @@
 from typing import List, Dict, Any, Set
 from infrastructures.mecab_tokenizer import extract_keywords
-from services.firebase_service import get_photo_data
+from repositories.storage_repository import StorageRepository
+
+# モジュールレベルでシングルトンインスタンスを保持
+_storage_repo = StorageRepository()
 
 
 async def keyword(text: str) -> List[Dict[str, Any]]:
@@ -23,7 +26,7 @@ async def keyword(text: str) -> List[Dict[str, Any]]:
     keywords = list(set(keywords))
 
     # データ取得
-    photo_data = await get_photo_data()
+    photo_data = await _storage_repo.get_photo_data()
     if not photo_data:
         print("photo_dataが取得できませんでした")
         return []

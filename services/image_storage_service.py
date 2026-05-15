@@ -1,36 +1,10 @@
 import os
 from typing import Optional, Tuple
 from fastapi import UploadFile
-from firebase_admin import storage
-from infrastructures.firebase_config import initialize_firebase
+from repositories.storage_repository import StorageRepository
 
-# Firebase初期化
-initialize_firebase()
-
-
-async def check_blob_exists(blob_path: str) -> bool:
-    """指定パスのBlobが存在するかチェック"""
-    try:
-        bucket = storage.bucket()
-        blob = bucket.blob(blob_path)
-        return blob.exists()
-    except Exception as e:
-        print(f"Blob存在チェックエラー ({blob_path}): {e}")
-        return False
-
-
-async def save_image_to_storage(image_data: bytes, blob_path: str, content_type: str = "image/jpeg") -> bool:
-    """画像データをFirebase Storageに保存"""
-    try:
-        bucket = storage.bucket()
-        blob = bucket.blob(blob_path)
-        blob.upload_from_string(image_data, content_type=content_type)
-        blob.make_public()
-        print(f"画像保存成功: {blob_path}")
-        return True
-    except Exception as e:
-        print(f"画像保存エラー: {e}")
-        return False
+# Repository初期化
+_storage_repo = StorageRepository()
 
 async def process_uploaded_image(image: UploadFile, text: str, user_id: str) -> Tuple[Optional[str], str]:
     """アップロード画像の処理"""
@@ -45,8 +19,8 @@ async def process_uploaded_image(image: UploadFile, text: str, user_id: str) -> 
     query_path = f"api/query_image/{filename_base}{ext}"
     search_path = f"api/search_image/{filename_base}{ext}"
 
-    query_exists = await check_blob_exists(query_path)
-    search_exists = await check_blob_exists(search_path)
+    query_exists = await _storage_repo.check_blob_exists(query_path)
+    search_exists = await _storage_repo.check_blob_exists(search_path)
 
     if query_exists:
         return query_path, "exist"
@@ -61,7 +35,7 @@ async def process_uploaded_image(image: UploadFile, text: str, user_id: str) -> 
 
     image_data = await image.read()
 
-    if await save_image_to_storage(image_data, search_path, image.content_type or "image/jpeg"):
+    if await _storage_repo.save_blob(image_data, search_path, image.content_type or "image/jpeg"):
         return search_path, "user_upload"
     return None, "user_upload"
 
@@ -98,8 +72,8 @@ async def process_generated_image_for_storage(generated_image, text: str, user_i
         query_path = f"api/query_image/{filename_base}.jpg"
         search_path = f"api/search_image/{filename_base}.jpg"
 
-        query_exists = await check_blob_exists(query_path)
-        search_exists = await check_blob_exists(search_path)
+        query_exists = await _storage_repo.check_blob_exists(query_path)
+        search_exists = await _storage_repo.check_blob_exists(search_path)
 
         if query_exists:
             return query_path, "suggested"
@@ -112,7 +86,7 @@ async def process_generated_image_for_storage(generated_image, text: str, user_i
         generated_image.save(image_bytes, format='JPEG')
         image_data = image_bytes.getvalue()
 
-        if await save_image_to_storage(image_data, search_path):
+        if await _storage_repo.save_blob(image_data, search_path):
             return search_path, "generate"
 
         return None, "generate"

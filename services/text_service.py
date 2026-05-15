@@ -1,7 +1,10 @@
 from services.keyword_filter_service import keyword
 from infrastructures.bert_vectorizer import vectorize_text as text_vector
-from services.firebase_service import get_feature
+from repositories.storage_repository import StorageRepository
 from services.similarity_service import similarity_sort
+
+# モジュールレベルでシングルトンインスタンスを保持
+_storage_repo = StorageRepository()
 
 
 async def text_caluculate(text: str):
@@ -15,10 +18,12 @@ async def text_caluculate(text: str):
         return [], filtered_data
 
     # 3. npyファイルからベクトルデータ取得（Sentence-BERT用）
-    features, labels = await get_feature('sentence_bert_ja_mean_ver2.npy')
-    if features is None or labels is None:
+    result = await _storage_repo.get_feature_with_labels('sentence_bert_ja_mean_ver2.npy')
+    if result is None:
         print("特徴量データの取得に失敗しました")
         return [], filtered_data
+
+    features, labels = result
 
     # 4. コサイン類似度計算とソート
     similarity_results = similarity_sort(filtered_data, vector, features, labels)

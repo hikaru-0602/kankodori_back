@@ -1,9 +1,12 @@
 from typing import List, Dict, Any, Optional, Union
 from fastapi import UploadFile
-from services.firebase_service import get_feature, get_photo_data
+from repositories.storage_repository import StorageRepository
 from services.similarity_service import similarity_sort
 from infrastructures.image_downloader import download_image_from_url
 from infrastructures.vit_vectorizer import process_image, extract_features
+
+# モジュールレベルでシングルトンインスタンスを保持
+_storage_repo = StorageRepository()
 
 async def image_caluculate(image: Union[UploadFile, str, None], filtered_data: Optional[List[Dict[str, Any]]] = None):
     # imageがNoneの場合は空の結果を返す
@@ -41,16 +44,18 @@ async def image_caluculate(image: Union[UploadFile, str, None], filtered_data: O
 
     # filtered_dataがない場合はget_photo_dataから取得
     if filtered_data is None:
-        filtered_data = await get_photo_data()
+        filtered_data = await _storage_repo.get_photo_data()
         if not filtered_data:
             print("photo_dataの取得に失敗しました")
             return []
 
     # 3. npyファイルから特徴量データを取得
-    features, labels = await get_feature("vit.npy")
-    if features is None or labels is None:
+    result = await _storage_repo.get_feature_with_labels("vit.npy")
+    if result is None:
         print("特徴量データの取得に失敗しました")
         return []
+
+    features, labels = result
 
     # 4. コサイン類似度を計算してソート
     similarity_results = similarity_sort(filtered_data, vector, features, labels)
