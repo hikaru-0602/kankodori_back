@@ -1,9 +1,9 @@
 from typing import List, Dict, Any, Optional, Union
 from fastapi import UploadFile
-from services.vit import get_image_vector
 from services.firebase_service import get_feature, get_photo_data
 from services.similarity_service import similarity_sort
 from infrastructures.image_downloader import download_image_from_url
+from infrastructures.vit_vectorizer import process_image, extract_features
 
 async def image_caluculate(image: Union[UploadFile, str, None], filtered_data: Optional[List[Dict[str, Any]]] = None):
     # imageがNoneの場合は空の結果を返す
@@ -27,8 +27,14 @@ async def image_caluculate(image: Union[UploadFile, str, None], filtered_data: O
         image.save(buffer, format='JPEG')
         image_data = buffer.getvalue()
 
-    # 2. vit.pyを使用して画像からベクトルを抽出
-    vector = get_image_vector(image_data)
+    # 2. infrastructures.vit_vectorizerを使用して画像からベクトルを抽出
+    # 2-1. 画像の前処理
+    inputs = process_image(image_data)
+    if inputs is None:
+        return []
+
+    # 2-2. 特徴量抽出
+    vector = extract_features(inputs)
 
     if vector is None:
         return []
@@ -36,9 +42,15 @@ async def image_caluculate(image: Union[UploadFile, str, None], filtered_data: O
     # filtered_dataがない場合はget_photo_dataから取得
     if filtered_data is None:
         filtered_data = await get_photo_data()
+        if not filtered_data:
+            print("photo_dataの取得に失敗しました")
+            return []
 
     # 3. npyファイルから特徴量データを取得
     features, labels = await get_feature("vit.npy")
+    if features is None or labels is None:
+        print("特徴量データの取得に失敗しました")
+        return []
 
     # 4. コサイン類似度を計算してソート
     similarity_results = similarity_sort(filtered_data, vector, features, labels)
