@@ -21,7 +21,21 @@ def similarity_sort(
     Returns:
         類似度の高い順にソートされた{"id": id, "similarity": similarity}の辞書リスト
     """
-    if not filtered_data or query_vector is None:
+    # バリデーション
+    if not filtered_data:
+        print("filtered_dataが空です")
+        return []
+
+    if query_vector is None:
+        print("query_vectorがNoneです")
+        return []
+
+    if features is None:
+        print("featuresがNoneです")
+        return []
+
+    if not labels:
+        print("labelsが空です")
         return []
 
     similarities = []
